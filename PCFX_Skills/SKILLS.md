@@ -51,6 +51,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | "Every piece works in isolation but the renderer draws nothing" | **pcfx-3d-pipeline §1b** (the MUL high word), then §1a (the CG-base units) |
 | Horizontal pixel pairs swapped | **pcfx-king-framebuffer** (two pixels per word) |
 | Tiles, sprites, scrolling, sprite order | **pcfx-vdc-tiles-sprites** |
+| RAINBOW background/sky/FMV, scrolling RAINBOW layer, RAINBOW stream looks wrong (right-side glitch, washed out, too large) | **pcfx-rainbow** |
 | Colours wrong, muddy, grey; baking art | **pcfx-yuv-palette** |
 | Need to *prove* a colour is right, not just eyeball it; suspect a wrong colour-format assumption (RGB332/RGB555 instead of YUV) | **pcfx-color-verification** |
 | Two subsystems corrupting each other's memory | **pcfx-kram-layout** |
@@ -120,6 +121,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | `pcfx-input` | FX-Pad and mouse, button masks, edge detection, scripting | |
 | `pcfx-audio` | KING ADPCM, PSG, CD-DA, KRAM contention | |
 | `pcfx-2d-code-examples` | Copy-pasteable CD-DA/ADPCM, VDC 16-colour and 256-colour dual-VDC, KING scrolling, and microcode examples from working projects | |
+| `pcfx-rainbow` | HuC6271 RAINBOW video: stream format, still-image and PCFV authoring, horizontal/vertical scrolling, KING transfer setup, Doom runtime example | `tools/rainbow/` |
 | `pcfx-emulator-testing` | pcfx-headless, boot delay, input files, what it can't prove | |
 | `pcfx-v810-performance` | instruction costs, icache, DRAM page, measured catalogue | |
 | `pcfx-v810-cpu-model` | emulator cycle-model implementation, stalls, validation boundaries | |

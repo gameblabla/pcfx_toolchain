@@ -82,7 +82,7 @@ the bundled directory.
 |---|---|
 | `vendor/libpcfx/` | The SDK: `king.h`, `tetsu.h`, `vdc.h`, `contrlr.h`, `timer.h`, `cd.h`, `sound.h`. **`vendor/libpcfx/examples/` is the single best source of correct bring-up code.** |
 | `vendor/pcfxemu/` | Mednafen-derived emulator source. The bundled `toolchain/bin/pcfx-headless` is the test harness; `PROFILE=1` builds add a V810+KING profiler. |
-| `DOCUMENTATION/` | Bundled NEC/Hudson chip manuals and translations (`C6261`=Tetsu, `C6270`=VDC, `C6272`=KING, `C6273`=RAINBOW). Authoritative when the SDK is ambiguous. |
+| `DOCUMENTATION/` | Bundled NEC/Hudson chip manuals and translations (`C6261`=Tetsu, `C6270`=VDC, `C6271`=RAINBOW, `C6272`=KING, `C6273`=FXGA-board-only). Authoritative when the SDK is ambiguous. |
 | `vendor/v810-gcc/` and `toolchain/v810-gcc/` | V810 compiler source and the bundled compiler binary. |
 | `vendor/doompcfx/` | Most mature bundled port and the deepest Doom performance source in this toolkit. |
 | `tools/large-game/doom/` | Reusable large-game asset, CD, checksum, and profiling helpers copied from the local Doom workspace. |
@@ -233,6 +233,7 @@ unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work
 | **pcfx-audio** | ADPCM sound effects and CD-DA music. |
 | **pcfx-2d-code-examples** | Real working CD-DA/ADPCM/VDC/KING/microcode code examples, including the two VDC colour-mode patterns. |
 | **pcfx-cd-assets** | Getting data off the disc at runtime; asset pipelines. |
+| **pcfx-rainbow** | RAINBOW (HuC6271) video: YUV/DCT streams, still-image and PCFV authoring, horizontal/vertical scrolling, KING transfer setup. |
 
 Skills live in `$PCFX_SKILLS/<name>/SKILL.md`. **Read the whole skill before acting on it**, and
 copy code blocks verbatim instead of re-deriving them from the prose around them.
