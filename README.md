@@ -62,6 +62,19 @@ The copied `PCFX_Skills/` folder is the AI-facing reference. Start with
 server, use `PCFX_LLM_ENDPOINT=http://127.0.0.1:8080 PCFX_SKILL_MODE=router PCFX_Skills/pi_pcfx.sh "..."`
 (the wrapper accepts the existing `PCFX_LLM_*`
 variables; `0.0.0.0` is a bind address, so `127.0.0.1` is normally the client URL).
+
+The same skills are also exposed in the standard agent layouts:
+
+- `.agents/skills/<skill-id>/` for repository-local Codex discovery.
+- `.opencode/skills/<skill-id>/` for project-local OpenCode discovery.
+
+Both agent layouts are checked-in materialized mirrors with the supporting scripts,
+templates, and references beside each `SKILL.md`; `.opencode/opencode.json` registers
+the OpenCode project skill directory. Treat `PCFX_Skills/` as the source of truth when
+changing a skill, then refresh both mirrors with
+`./scripts/sync-agent-skills.sh`. `PCFX_Skills/SKILLS.md` remains the router for `pi`
+and other agents that use the bundle directly.
+
 If `pi` is unavailable, generate a prompt with:
 
 ```sh

@@ -1,0 +1,7 @@
+binary ./out.bin
+name PCFX Cube3D
+maker homebrew
+makerid TFX
+date 20260806
+country 1
+version 256
