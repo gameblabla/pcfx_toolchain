@@ -71,9 +71,11 @@ and larger output**. State persists across `FF F8` strip boundaries; a trailing
 rescale after column 15 belongs to the next strip. DC-Y `0x0F` is the **null-run**
 escape: black/neutral macroblocks filled with the programmed null colour. A
 coefficient beyond category 9 is an encoder error — pick a coarser scale, never
-clip. Arithmetic details (YUV constants, integer FDCT, quantizer) are
-MPCONV2.EXE reverse engineering, not manual text; see
-`DoomPCFX/rainbow_findings/` notes when you need them.
+clip. Encoder arithmetic is MPCONV2.EXE reverse engineering, not manual
+text: integer RGB→YUV with chroma reduction, integer FDCT whose first pass
+uses `0x15F2`, signed quantization against the base tables above, and
+per-scale fit — a coefficient beyond category 9 rejects that scale, with
+`auto` searching finest-first from 0 through 15.
 
 ## 2. Authoring (`tools/rainbow`)
 

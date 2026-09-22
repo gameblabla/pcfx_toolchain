@@ -53,6 +53,10 @@ vendor/libpcfx/examples/**/*.cue
 vendor/libpcfx/examples/**/out.bin
 vendor/libpcfx/examples/**/lbas.h
 
+# Local duplicate clone; the canonical copy is the
+# vendor/pcfx_rainbow_mp2_adpcm submodule. Left in place, never commit or package.
+/pcfx_rainbow_mp2/
+
 # OS/editor noise.
 .DS_Store
 *~

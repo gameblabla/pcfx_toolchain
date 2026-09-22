@@ -37,6 +37,11 @@ tar -czf "$release_path" \
     --exclude='./pcfx.rom' --exclude='./pcfxbios.bin' \
     --exclude='./pcfxv101.bin' --exclude='./pcfx_bios.bin' \
     --exclude='./pcfxga.rom' --exclude='./pcfxga.bin' \
+    --exclude='./pcfx_rainbow_mp2' --exclude='./pcfx_rainbow_mp2/*' \
+    --exclude='./pcfx_rainbow_mp2_startup_sync_package' --exclude='./pcfx_rainbow_mp2_startup_sync_package/*' \
+    --exclude='./.vexp' --exclude='./.vexp/*' \
+    --exclude='./*-local-command-*.txt' \
+    --exclude='./codex-session-*.md' --exclude='./session-*.md' \
     --exclude='*/build' --exclude='*/build/*' \
     --exclude='examples/*/*.o' \
     --exclude='examples/*/*.elf' \
@@ -49,6 +54,9 @@ tar -czf "$release_path" \
     --exclude='examples/*/assets/*.dat' \
     --exclude='vendor/*/src/*.o' \
     --exclude='vendor/*/*.a' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/*.bin' --exclude='vendor/pcfx_rainbow_mp2_adpcm/*.cue' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/assets' --exclude='vendor/pcfx_rainbow_mp2_adpcm/assets/*' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/validation' --exclude='vendor/pcfx_rainbow_mp2_adpcm/validation/*' \
     --exclude='*/__pycache__' --exclude='*/__pycache__/*' \
     -C "$PCFX_REPO_ROOT" .
 
