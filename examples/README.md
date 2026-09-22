@@ -9,6 +9,6 @@
 - `../PCFX_Skills/pcfx-3d-pipeline/template/` — a verified software-3D cube template
   and host-side test harness.
 
-The example Makefiles prefer `prebuilt/v810-gcc` and `vendor/libpcfx`; export
-`V810GCC` or `LIBPCFX` to point them elsewhere. Build products are disposable and
+The example Makefiles prefer `toolchain/v810-gcc` and `vendor/libpcfx`; export
+`V810_GCC` (or legacy `V810GCC`) or `LIBPCFX` to point them elsewhere. Build products are disposable and
 are ignored by Git.

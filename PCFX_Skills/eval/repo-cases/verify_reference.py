@@ -16,9 +16,11 @@ from pathlib import Path
 
 TOOLKIT_ROOT = Path(os.environ.get("PCFX_TOOLKIT_ROOT",
                                    Path(__file__).resolve().parents[3])).resolve()
-EMU = os.environ.get("PCFXEMU", str(TOOLKIT_ROOT / "prebuilt/bin/pcfx-headless"))
+EMU = os.environ.get("PCFXEMU", str(TOOLKIT_ROOT / "toolchain/bin/pcfx-headless"))
 BIOS = os.environ.get("PCFX_BIOS_DIR", os.environ.get("BIOSDIR", ""))
-V810GCC = os.environ.get("V810GCC", str(TOOLKIT_ROOT / "prebuilt/v810-gcc"))
+V810GCC = os.environ.get(
+    "V810_GCC", os.environ.get("V810GCC", str(TOOLKIT_ROOT / "toolchain/v810-gcc"))
+)
 
 
 def load_env(path):
@@ -53,7 +55,7 @@ def main():
     r = {"workdir": wd}
 
     env = dict(os.environ, PATH=f"{V810GCC}/bin:" + os.environ["PATH"],
-               V810GCC=V810GCC)
+               V810_GCC=V810GCC, V810GCC=V810GCC)
     b = subprocess.run(cfg["BUILD_CMD"], cwd=wd, env=env, shell=True,
                        capture_output=True, text=True)
     r["build_ok"] = (b.returncode == 0)

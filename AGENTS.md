@@ -51,3 +51,18 @@ For a new project, use `scripts/new-project.sh NAME DEST` and begin from the ver
 bring-up template. For a large game, keep only the boot program in the BIOS-loaded
 region and put large data behind `append` in `cdlink.txt`; inspect the generated LBA
 header before writing a loader.
+
+## Toolchain discovery
+
+The default bundled layout is `toolchain/v810-gcc` for the V810 compiler and
+`toolchain/bin/` for host tools such as `bincat`, `pcfx-cdlink`, and `pcfx-headless`.
+The scripts automatically check these locations in order:
+
+1. `V810_GCC` (or legacy `V810GCC`), when set;
+2. `$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc`;
+3. `/opt/v810-gcc`.
+
+`V810GCC` remains accepted for compatibility with older projects. Set
+`PCFX_TOOLCHAIN_DIR` when the bundled `toolchain/` directory has been moved. Running
+`source scripts/env.sh` exports the discovered path as both `V810_GCC` and `V810GCC`,
+so examples and older Makefiles use the same compiler without manual searching.

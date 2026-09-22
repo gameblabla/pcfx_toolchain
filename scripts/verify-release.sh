@@ -44,10 +44,8 @@ git -C "$PCFX_REPO_ROOT" submodule status
 echo "VERIFY  repository structure and shell/Python syntax passed"
 
 if [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" &&
-      -x "$PCFX_REPO_ROOT/prebuilt/v810-gcc/bin/v810-gcc" ]]; then
-    [[ -x "$PCFX_REPO_ROOT/prebuilt/v810-gcc-linux64/bin/v810-gcc" ]] ||
-        pcfx_die "Linux x86_64 prebuilt toolchain bundle is missing"
-    echo "VERIFY  Linux x86_64 prebuilt toolchain bundle present"
+      -x "$PCFX_TOOLCHAIN_DIR/v810-gcc/bin/v810-gcc" ]]; then
+    echo "VERIFY  Linux x86_64 V810 toolchain present"
 fi
 
 if [[ -n "${1:-}" ]]; then
@@ -61,9 +59,9 @@ if [[ -n "${1:-}" ]]; then
         pcfx_die "release archive appears to contain a BIOS-like file"
     fi
     if [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" &&
-          -x "$PCFX_REPO_ROOT/prebuilt/v810-gcc/bin/v810-gcc" ]]; then
-        if ! tar -tzf "$archive_path" | rg -Fx './prebuilt/v810-gcc-linux64/bin/v810-gcc' >/dev/null; then
-            pcfx_die "release archive is missing the Linux x86_64 prebuilt toolchain"
+          -x "$PCFX_TOOLCHAIN_DIR/v810-gcc/bin/v810-gcc" ]]; then
+        if ! tar -tzf "$archive_path" | rg -Fx './toolchain/v810-gcc/bin/v810-gcc' >/dev/null; then
+            pcfx_die "release archive is missing the Linux V810 toolchain"
         fi
     fi
     echo "VERIFY  release archive readable and BIOS scan passed: $archive_path"

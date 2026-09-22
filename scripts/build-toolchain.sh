@@ -14,14 +14,14 @@ elif [[ -n "${1:-}" ]]; then
     pcfx_die "usage: $0 [--copy PATH] [--build]"
 fi
 
-mkdir -p "$PCFX_PREBUILT_DIR"
+mkdir -p "$PCFX_TOOLCHAIN_DIR"
 
 if [[ "$MODE" == copy ]]; then
     if [[ -z "$SOURCE_PATH" ]]; then
         SOURCE_PATH="$(pcfx_find_toolchain || true)"
     fi
-    [[ -n "$SOURCE_PATH" ]] || pcfx_die "no existing V810GCC found; pass --copy PATH or use --build"
-    [[ -x "$SOURCE_PATH/bin/v810-gcc" ]] || pcfx_die "not a V810GCC directory: $SOURCE_PATH"
+    [[ -n "$SOURCE_PATH" ]] || pcfx_die "no existing V810_GCC found; pass --copy PATH or use --build"
+    [[ -x "$SOURCE_PATH/bin/v810-gcc" ]] || pcfx_die "not a V810_GCC directory: $SOURCE_PATH"
 else
     pcfx_need_command cp
     pcfx_need_command curl
@@ -37,8 +37,14 @@ else
     [[ -x "$SOURCE_PATH/bin/v810-gcc" ]] || pcfx_die "toolchain build finished without $SOURCE_PATH/bin/v810-gcc"
 fi
 
-rm -rf "$PCFX_PREBUILT_DIR/v810-gcc"
-cp -a "$SOURCE_PATH" "$PCFX_PREBUILT_DIR/v810-gcc"
-pcfx_stage_linux64_toolchain
-echo "TOOLCHAIN staged in $PCFX_PREBUILT_DIR/v810-gcc"
-"$PCFX_PREBUILT_DIR/v810-gcc/bin/v810-gcc" --version | head -1
+destination="$PCFX_TOOLCHAIN_DIR/v810-gcc"
+source_real="$(cd "$SOURCE_PATH" && pwd -P)"
+destination_real="$(mkdir -p "$PCFX_TOOLCHAIN_DIR" && cd "$PCFX_TOOLCHAIN_DIR" && pwd -P)/v810-gcc"
+if [[ "$source_real" != "$destination_real" ]]; then
+    rm -rf "$destination"
+    cp -a "$SOURCE_PATH" "$destination"
+else
+    echo "TOOLCHAIN already available at $destination"
+fi
+echo "TOOLCHAIN installed in $destination"
+"$destination/bin/v810-gcc" --version | head -1

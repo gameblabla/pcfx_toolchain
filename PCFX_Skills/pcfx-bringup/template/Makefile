@@ -1,8 +1,8 @@
 # PC-FX project template Makefile (self-contained; does not use example.mk).
 #
 #   export PCFX_TOOLKIT_ROOT=..       # toolkit root, relative to this project
-#   export V810GCC=$PCFX_TOOLKIT_ROOT/prebuilt/v810-gcc
-#   export PATH=$V810GCC/bin:$PATH
+#   export V810_GCC=$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc
+#   export PATH=$V810_GCC/bin:$PATH
 #   make            -> game.elf / game.bin
 #   make cd         -> game.cue + game.bin (bootable disc image)
 #   make run        -> build the disc and screenshot it in the emulator
@@ -13,11 +13,12 @@
 # a project copied elsewhere.
 
 PCFX_TOOLKIT_ROOT ?= $(or $(foreach d,. .. ../.. ../../..,$(if $(wildcard $(d)/vendor/libpcfx/ldscripts/v810.x),$(d))),.)
-V810GCC       ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/v810-gcc
+V810_GCC      ?= $(if $(V810GCC),$(V810GCC),$(PCFX_TOOLKIT_ROOT)/toolchain/v810-gcc)
+V810GCC       ?= $(V810_GCC)
 LIBPCFX       ?= $(PCFX_TOOLKIT_ROOT)/vendor/libpcfx
-PCFXEMU       ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/pcfx-headless
-BINCAT        ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/bincat
-CDLINK        ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/pcfx-cdlink
+PCFXEMU       ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/pcfx-headless
+BINCAT        ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/bincat
+CDLINK        ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/pcfx-cdlink
 BIOSDIR       ?= $(PCFX_BIOS_DIR)
 
 PREFIX         = v810
@@ -31,14 +32,14 @@ OBJECTS        = src/main.o
 # -mv810      : target the V810 core
 # -msda=256   : small-data area; globals under 256B get gp-relative access
 # -mno-prolog-function : no __save/__load trampolines (faster calls, bigger code)
-CFLAGS         = -I$(V810GCC)/include/ -I$(V810GCC)/$(PREFIX)/include/ \
+CFLAGS         = -I$(V810_GCC)/include/ -I$(V810_GCC)/$(PREFIX)/include/ \
                  -O2 -Wall -std=gnu99 -mv810 -msda=256 -mno-prolog-function \
                  $(EXTRA)
 
 LDFLAGS        = -T$(LIBPCFX)/ldscripts/v810.x \
-                 -L$(V810GCC)/lib/ -L$(V810GCC)/$(PREFIX)/lib/ \
-                 -L$(V810GCC)/lib/gcc/$(PREFIX)/4.9.4/ \
-                 $(V810GCC)/$(PREFIX)/lib/crt0.o
+                 -L$(V810_GCC)/lib/ -L$(V810_GCC)/$(PREFIX)/lib/ \
+                 -L$(V810_GCC)/lib/gcc/$(PREFIX)/4.9.4/ \
+                 $(V810_GCC)/$(PREFIX)/lib/crt0.o
 
 LIBS           = -lpcfx -lc -lsim -lgcc
 

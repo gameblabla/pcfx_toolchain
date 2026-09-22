@@ -6,23 +6,22 @@ source "$(dirname "$0")/lib.sh"
 pcfx_need_command tar
 pcfx_need_command sha256sum
 
-mkdir -p "$PCFX_PREBUILT_DIR" "$PCFX_REPO_ROOT/dist"
+mkdir -p "$PCFX_TOOLCHAIN_DIR" "$PCFX_REPO_ROOT/dist"
 
 if [[ -x "$PCFX_BIN_DIR/pcfx-headless" ]]; then
-    echo "PACKAGE using staged binaries from $PCFX_PREBUILT_DIR"
+    echo "PACKAGE using bundled binaries from $PCFX_TOOLCHAIN_DIR"
 else
-    echo "PACKAGE warning: no pcfx-headless staged; archive will remain source-only for that component" >&2
+    echo "PACKAGE warning: no pcfx-headless bundled; archive will remain source-only for that component" >&2
 fi
 
-if [[ -d "$PCFX_PREBUILT_DIR/v810-gcc" ]]; then
-    pcfx_stage_linux64_toolchain
-    echo "PACKAGE including prebuilt V810 toolchain"
+if [[ -d "$PCFX_TOOLCHAIN_DIR/v810-gcc" ]]; then
+    echo "PACKAGE including bundled V810 toolchain"
 else
-    echo "PACKAGE warning: no prebuilt/v810-gcc; run scripts/build-toolchain.sh to include it" >&2
+    echo "PACKAGE warning: no toolchain/v810-gcc; run scripts/build-toolchain.sh to include it" >&2
 fi
 
-find "$PCFX_PREBUILT_DIR" -type f -print0 | sort -z | xargs -0 sha256sum \
-    > "$PCFX_PREBUILT_DIR/SHA256SUMS"
+(cd "$PCFX_TOOLCHAIN_DIR" && find . -type f ! -name 'SHA256SUMS' -print0 | sort -z | xargs -0 sha256sum) \
+    > "$PCFX_TOOLCHAIN_DIR/SHA256SUMS"
 
 release_version="${PCFX_RELEASE_VERSION:-$(date -u +%Y%m%d)}"
 release_name="pcfx-toolkit-$release_version"

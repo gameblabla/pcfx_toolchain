@@ -82,7 +82,7 @@ hill-climbs. Write a config naming your build and run commands:
 ```json
 {
   "build": "make -j8 cd",
-  "run":   "./prebuilt/bin/pcfx-headless-prof --frames 1800 --commands demo.txt game.cue",
+  "run":   "./toolchain/bin/pcfx-headless-prof --frames 1800 --commands demo.txt game.cue",
   "workdir": ".",
   "knobs": {
     "PCFX_HOT_SPAN_LIT_OFFSET":   {"type":"hex","min":0,"max":4096,"step":64,"default":2624},

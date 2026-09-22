@@ -382,7 +382,7 @@ executable input, not a cache the emulator regenerates.
 
 1. Confirm the source centres the mesh and applies camera distance separately.
 2. Read the project's build wrapper before guessing its make target.
-3. Rebuild the **disc**, not an object file, e.g. `./build_with_toolchain.sh "$V810GCC" clean all`
+3. Rebuild the **disc**, not an object file, e.g. `./build_with_toolchain.sh "$V810_GCC" clean all`
    — such a wrapper puts the V810 tools on `PATH`, runs the project makefile, then
    `bincat` and `pcfx-cdlink` to regenerate the image and `.cue`.
 4. Screenshot past BIOS boot (≥1800 fields), sampling several animation phases.

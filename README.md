@@ -47,15 +47,16 @@ export PCFX_BIOS_DIR="$PWD/bios"
 the same directory under an accepted PC-FXGA name when using `--pcfxga`.
 
 The expected bundled emulator path is
-`$PCFX_TOOLKIT_ROOT/prebuilt/bin/pcfx-headless`; run `./scripts/build-headless.sh` to
-create it. `scripts/run-headless.sh` uses that staged binary automatically, or you can
+`$PCFX_TOOLKIT_ROOT/toolchain/bin/pcfx-headless`; run `./scripts/build-headless.sh` to
+create it. `scripts/run-headless.sh` uses that bundled binary automatically, or you can
 override it with `PCFX_HEADLESS=/path/to/pcfx-headless`. A source-tree build may also
-exist at `vendor/pcfxemu/pcfx-headless`, but the staged `prebuilt/bin` path is the
-release and script default.
+exist at `vendor/pcfxemu/pcfx-headless`, but the `toolchain/bin` path is the release
+and script default.
 
-`/opt/v810-gcc` is detected when present. Otherwise build or copy a toolchain into
-`prebuilt/v810-gcc`, or export `V810GCC=/path/to/v810-gcc`. The scripts never download
-a BIOS, and the ignored local `bios/` directory is never committed or packaged.
+The scripts first honor `V810_GCC` (and accept legacy `V810GCC`), then use the bundled
+default at `$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc`, and finally check `/opt/v810-gcc`.
+You can also change the bundle root with `PCFX_TOOLCHAIN_DIR`. The scripts never
+download a BIOS, and the ignored local `bios/` directory is never committed or packaged.
 
 The copied `PCFX_Skills/` folder is the AI-facing reference. Start with
 `PCFX_Skills/SKILLS.md`, then open the named `SKILL.md` in full. For a local `pi`
@@ -88,7 +89,7 @@ The original `bincat` is useful for small examples but is not the default large-
 path. It reads whole files into memory and has 32-bit bookkeeping. The local Doom
 workspace supplied an enhanced `pcfx-cdlink` with streamed `append`/`asset` files,
 generated LBA headers, and optional CD-DA track handling. That source is preserved at
-`tools/large-game/pcfxtools/` and is built as `prebuilt/bin/pcfx-cdlink-large`.
+`tools/large-game/pcfxtools/` and is built as `toolchain/bin/pcfx-cdlink-large`.
 
 The imported Doom scripts are under `tools/large-game/doom/`; the most generally useful
 ones are `bake_wad.py`, `gen_pcfx_packs.py`, `gen_pcfx_cdassets.py`, `lz4_block.py`,
@@ -117,9 +118,8 @@ Build the host tools, SDK, and emulator, then create a source-plus-binaries arch
 
 The tarball contains the initialized source submodules, copied skills, examples,
 Python scripts, host binaries, `pcfx-headless`, and (when a toolchain is available)
-the prebuilt V810 toolchain. On Linux x86_64 it also includes the explicit
-`prebuilt/v810-gcc-linux64` bundle path, pointing to the same relocatable toolchain;
-set `V810GCC` to that path when selecting it manually. It excludes Git metadata,
+the bundled V810 toolchain under `toolchain/v810-gcc`. Set `V810_GCC` to another
+toolchain when selecting it manually. It excludes Git metadata,
 build scratch files, and BIOSes.
 
 ## References

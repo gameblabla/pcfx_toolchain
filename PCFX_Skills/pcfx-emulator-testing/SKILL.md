@@ -5,7 +5,7 @@ description: Run, screenshot, script input for, and profile a PC-FX program with
 
 # Testing with pcfxemu (headless)
 
-`prebuilt/bin/pcfx-headless` is the test harness. It runs a disc image for a fixed number of
+`toolchain/bin/pcfx-headless` is the test harness. It runs a disc image for a fixed number of
 frames with no window, and can dump a screenshot, audio, RAM, or a savestate.
 
 Run the path setup from `PCFX_Skills/AGENTS.md` first. The commands below assume the

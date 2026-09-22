@@ -25,5 +25,5 @@ build_one "$PCFX_REPO_ROOT/vendor/pcfxtools/pcfx-cdlink.c" pcfx-cdlink
 # streamed implementation used by large games.
 build_one "$PCFX_REPO_ROOT/tools/large-game/pcfxtools/pcfx-cdlink.c" pcfx-cdlink-large
 
-pcfx_hash_tree "$PCFX_BIN_DIR" > "$PCFX_PREBUILT_DIR/host-tools.SHA256SUMS"
-echo "HOST    staged in $PCFX_BIN_DIR"
+pcfx_hash_tree "$PCFX_BIN_DIR" > "$PCFX_TOOLCHAIN_DIR/host-tools.SHA256SUMS"
+echo "HOST    installed in $PCFX_BIN_DIR"

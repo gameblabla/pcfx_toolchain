@@ -1,8 +1,8 @@
 # cube3d - rotating flat-shaded cube, software 3D on PC-FX.
 #
 #   export PCFX_TOOLKIT_ROOT=..       # toolkit root, relative to this project
-#   export V810GCC=$PCFX_TOOLKIT_ROOT/prebuilt/v810-gcc
-#   export PATH=$V810GCC/bin:$PATH
+#   export V810_GCC=$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc
+#   export PATH=$V810_GCC/bin:$PATH
 #   make            -> cube3d.bin
 #   make cd         -> bootable disc (cube3d.cue)
 #   make run        -> build the disc and screenshot it (1800 frames)
@@ -15,12 +15,13 @@
 # a project copied elsewhere.
 
 PCFX_TOOLKIT_ROOT ?= $(or $(foreach d,. .. ../.. ../../..,$(if $(wildcard $(d)/vendor/libpcfx/ldscripts/v810.x),$(d))),.)
-V810GCC       ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/v810-gcc
+V810_GCC      ?= $(if $(V810GCC),$(V810GCC),$(PCFX_TOOLKIT_ROOT)/toolchain/v810-gcc)
+V810GCC       ?= $(V810_GCC)
 LIBPCFX       ?= $(PCFX_TOOLKIT_ROOT)/vendor/libpcfx
-PCFXEMU       ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/pcfx-headless
-PCFXEMU_PROF  ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/pcfx-headless-prof
-BINCAT        ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/bincat
-CDLINK        ?= $(PCFX_TOOLKIT_ROOT)/prebuilt/bin/pcfx-cdlink
+PCFXEMU       ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/pcfx-headless
+PCFXEMU_PROF  ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/pcfx-headless-prof
+BINCAT        ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/bincat
+CDLINK        ?= $(PCFX_TOOLKIT_ROOT)/toolchain/bin/pcfx-cdlink
 BIOSDIR       ?= $(PCFX_BIOS_DIR)
 
 PREFIX         = v810
@@ -31,14 +32,14 @@ OBJCOPY        = $(PREFIX)-objcopy
 NAME           = cube3d
 OBJECTS        = src/cube3d.o
 
-CFLAGS         = -I$(V810GCC)/include/ -I$(V810GCC)/$(PREFIX)/include/ \
+CFLAGS         = -I$(V810_GCC)/include/ -I$(V810_GCC)/$(PREFIX)/include/ \
                  -O2 -Wall -std=gnu99 -mv810 -msda=256 -mno-prolog-function \
                  $(EXTRA)
 
 LDFLAGS        = -T$(LIBPCFX)/ldscripts/v810.x \
-                 -L$(V810GCC)/lib/ -L$(V810GCC)/$(PREFIX)/lib/ \
-                 -L$(V810GCC)/lib/gcc/$(PREFIX)/4.9.4/ \
-                 $(V810GCC)/$(PREFIX)/lib/crt0.o
+                 -L$(V810_GCC)/lib/ -L$(V810_GCC)/$(PREFIX)/lib/ \
+                 -L$(V810_GCC)/lib/gcc/$(PREFIX)/4.9.4/ \
+                 $(V810_GCC)/$(PREFIX)/lib/crt0.o
 
 LIBS           = -lpcfx -lc -lsim -lgcc
 
@@ -73,7 +74,7 @@ prof: cd
 	    $(NAME).cue 2>&1 | sed -n '/V810 PROFILE/,/^####################/p'
 
 hosttest: src/sin_table.h
-	gcc -O2 -w -I$(V810GCC)/$(PREFIX)/include/ -I$(LIBPCFX)/include \
+	gcc -O2 -w -I$(V810_GCC)/$(PREFIX)/include/ -I$(LIBPCFX)/include \
 	    -o hosttest hosttest.c
 	./hosttest
 

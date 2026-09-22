@@ -12,7 +12,7 @@ you get the numbers.
 
 ## 1. Run it
 
-`prebuilt/bin/pcfx-headless-prof` is the bundled headless emulator build with
+`toolchain/bin/pcfx-headless-prof` is the bundled headless emulator build with
 V810 profiling hooks enabled. The build switch and source branch vary by workspace;
 do not assume an ordinary stock `Makefile.headless` contains those hooks. The
 instrumented executable must prove itself by emitting the complete report below.
@@ -57,7 +57,7 @@ For `3DCharacterSpinning`, the checked-in harness is:
 ```bash
 cd source
 make -f Makefile.pcfx profile \
-  V810GCC="$V810GCC" \
+  V810_GCC="$V810_GCC" \
   PCFX_PROFILER="$PCFXEMU_PROF" \
   PCFX_BIOS="$PCFX_BIOS_DIR"
 ```

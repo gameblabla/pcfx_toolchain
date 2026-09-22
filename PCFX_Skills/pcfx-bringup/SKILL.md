@@ -15,8 +15,9 @@ debugging all of them at once from a blank page does not work.
 ```bash
 cp -r "$PCFX_SKILLS/pcfx-bringup/template" mygame
 cd mygame
-export V810GCC="${V810GCC:-$PCFX_TOOLKIT_ROOT/prebuilt/v810-gcc}"
-export PATH=$V810GCC/bin:$PATH
+export V810_GCC="${V810_GCC:-${V810GCC:-$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc}}"
+export V810GCC="${V810GCC:-$V810_GCC}"  # compatibility alias
+export PATH=$V810_GCC/bin:$PATH
 make LIBPCFX="$LIBPCFX" cd          # -> game.cue + game.bin
 make run                             # build + screenshot in the emulator
 ```
@@ -40,9 +41,9 @@ main.c  --v810-gcc-->  main.o
 | Compiler | `v810-gcc` (**GCC 4.9.4**) | old; no C11, no `-flto` worth using |
 | CFLAGS | `-O2 -Wall -std=gnu99 -mv810 -msda=256 -mno-prolog-function` | `-msda=256` = gp-relative small globals; `-mno-prolog-function` avoids `__save_rXX` call trampolines |
 | Linker script | `vendor/libpcfx/ldscripts/v810.x` | defines RAM layout, `__gp`, stack |
-| Startup | `$(V810GCC)/v810/lib/crt0.o` | **must be first object**; sets up gp/sp and calls `main` |
+| Startup | `$(V810_GCC)/v810/lib/crt0.o` | **must be first object**; sets up gp/sp and calls `main` |
 | Libraries | `-lpcfx -lc -lsim -lgcc` | in this order |
-| Disc tools | `bincat`, `pcfx-cdlink` | staged in `prebuilt/bin/` (also available in `$(V810GCC)/bin`) |
+| Disc tools | `bincat`, `pcfx-cdlink` | bundled in `toolchain/bin/` (also available in `$(V810_GCC)/bin`) |
 
 `bincat` concatenates your `.bin` (plus any extra asset files) into `out.bin` and writes
 `lbas.h`, a header giving each file's **disc LBA** — that is how runtime code finds assets

@@ -85,7 +85,7 @@ produce this from `(int64)a*b` - it calls `__muldi3`, far slower - so keep the a
   on-target counter for saved-state fps checks.
 - `hosttest.c` - host verification: transform/project/cull/sort/raster run on x86 and
   checked against expected screen coordinates. **Build from the toolkit root with
-  `gcc -O2 -w -I"$V810GCC/v810/include" -I"$LIBPCFX/include" -o hosttest hosttest.c`**;
+  `gcc -O2 -w -I"$V810_GCC/v810/include" -I"$LIBPCFX/include" -o hosttest hosttest.c`**;
   expect `PASS (every face agrees with geometry, all verts projected)`.
 - `tools/gen_sin.py` - bakes `src/sin_table.h` (Q16.16 sine table; runs on host).
 - Makefile: `make cd` builds `cube3d.cue` via bincat + pcfx-cdlink.

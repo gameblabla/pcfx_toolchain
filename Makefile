@@ -5,13 +5,13 @@ help:
 		'PC-FX toolkit targets:' \
 		'  doctor       check dependencies and optional BIOS/toolchain state' \
 		'  host-tools   build original and large-game host tools' \
-		'  toolchain    copy V810GCC into prebuilt/ or build it with --build' \
-		'  sdk          build libpcfx and stage the SDK' \
+		'  toolchain    install V810_GCC into toolchain/ or build it with --build' \
+		'  sdk          build libpcfx and install the SDK' \
 		'  headless     build pcfx-headless and pcfx-headless-prof' \
 		'  all          host-tools + toolchain + sdk + headless' \
-		'  release      package the current source and staged binaries' \
+		'  release      package the current source and bundled binaries' \
 		'  verify       run local structural and script checks' \
-		'  clean        remove top-level build/dist/prebuilt products'
+		'  clean        remove top-level build/dist/toolchain products'
 
 doctor:
 	./scripts/doctor.sh
@@ -37,4 +37,4 @@ verify:
 	./scripts/verify-release.sh
 
 clean:
-	rm -rf build dist prebuilt
+	rm -rf build dist toolchain

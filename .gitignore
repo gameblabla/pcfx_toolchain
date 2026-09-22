@@ -1,7 +1,7 @@
 # Local build and release products.
 /build/
 /dist/
-/prebuilt/
+/toolchain/
 /artifacts/
 
 # External BIOS dumps. Keep them local; never commit or package them.
@@ -13,7 +13,7 @@
 /pcfxga.rom
 /pcfxga.bin
 
-# Release archives and compiler/emulator products outside the staged folders.
+# Release archives and compiler/emulator products outside the bundled toolchain.
 *.tar
 *.tar.gz
 *.tgz

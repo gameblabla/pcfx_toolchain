@@ -23,13 +23,16 @@ MAX_DRAWN = 40000
 
 TOOLKIT_ROOT = Path(os.environ.get("PCFX_TOOLKIT_ROOT",
                                    Path(__file__).resolve().parents[3])).resolve()
-EMU = os.environ.get("PCFXEMU", str(TOOLKIT_ROOT / "prebuilt/bin/pcfx-headless"))
+EMU = os.environ.get("PCFXEMU", str(TOOLKIT_ROOT / "toolchain/bin/pcfx-headless"))
 BIOS = os.environ.get("PCFX_BIOS_DIR", os.environ.get("BIOSDIR", ""))
-V810GCC = os.environ.get("V810GCC", str(TOOLKIT_ROOT / "prebuilt/v810-gcc"))
+V810GCC = os.environ.get(
+    "V810_GCC", os.environ.get("V810GCC", str(TOOLKIT_ROOT / "toolchain/v810-gcc"))
+)
 
 
 def run(cmd, cwd, **kw):
-    env = dict(os.environ, PATH=f"{V810GCC}/bin:" + os.environ["PATH"])
+    env = dict(os.environ, PATH=f"{V810GCC}/bin:" + os.environ["PATH"],
+               V810_GCC=V810GCC, V810GCC=V810GCC)
     return subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str),
                           capture_output=True, text=True, **kw)
 

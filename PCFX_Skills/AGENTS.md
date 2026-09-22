@@ -36,23 +36,28 @@ the project is elsewhere, set `PCFX_TOOLKIT_ROOT` to the toolkit root.
 ```bash
 export PCFX_TOOLKIT_ROOT="${PCFX_TOOLKIT_ROOT:-.}"
 export PCFX_SKILLS="${PCFX_SKILLS:-$PCFX_TOOLKIT_ROOT/PCFX_Skills}"
-export V810GCC="${V810GCC:-$PCFX_TOOLKIT_ROOT/prebuilt/v810-gcc}"
+export V810_GCC="${V810_GCC:-${V810GCC:-$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc}}"
+export V810GCC="${V810GCC:-$V810_GCC}"  # compatibility alias
 export LIBPCFX="${LIBPCFX:-$PCFX_TOOLKIT_ROOT/vendor/libpcfx}"
-export PCFXEMU="${PCFXEMU:-$PCFX_TOOLKIT_ROOT/prebuilt/bin/pcfx-headless}"
-export PCFXEMU_PROF="${PCFXEMU_PROF:-$PCFX_TOOLKIT_ROOT/prebuilt/bin/pcfx-headless-prof}"
-export PATH="$V810GCC/bin:$PATH"
+export PCFXEMU="${PCFXEMU:-$PCFX_TOOLKIT_ROOT/toolchain/bin/pcfx-headless}"
+export PCFXEMU_PROF="${PCFXEMU_PROF:-$PCFX_TOOLKIT_ROOT/toolchain/bin/pcfx-headless-prof}"
+export PATH="$V810_GCC/bin:$PATH"
 # Set this only when running the emulator; the BIOS remains external.
 # export PCFX_BIOS_DIR="$YOUR_LEGALLY_OBTAINED_BIOS_DIR"
 ```
 
 Do not replace these with paths from the machine that produced the bundle.
+The repository scripts use the same discovery order: `V810_GCC`, the bundled
+`$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc`, then a system-installed V810 toolchain.
+`V810GCC` is retained as a compatibility alias; `PCFX_TOOLCHAIN_DIR` can relocate
+the bundled directory.
 
 | Path | What it is |
 |---|---|
 | `vendor/libpcfx/` | The SDK: `king.h`, `tetsu.h`, `vdc.h`, `contrlr.h`, `timer.h`, `cd.h`, `sound.h`. **`vendor/libpcfx/examples/` is the single best source of correct bring-up code.** |
-| `vendor/pcfxemu/` | Mednafen-derived emulator source. The staged `prebuilt/bin/pcfx-headless` is the test harness; `PROFILE=1` builds add a V810+KING profiler. |
+| `vendor/pcfxemu/` | Mednafen-derived emulator source. The bundled `toolchain/bin/pcfx-headless` is the test harness; `PROFILE=1` builds add a V810+KING profiler. |
 | `DOCUMENTATION/` | Bundled NEC/Hudson chip manuals and translations (`C6261`=Tetsu, `C6270`=VDC, `C6272`=KING, `C6273`=RAINBOW). Authoritative when the SDK is ambiguous. |
-| `vendor/v810-gcc/` and `prebuilt/v810-gcc/` | V810 compiler source and the optional staged compiler binary. |
+| `vendor/v810-gcc/` and `toolchain/v810-gcc/` | V810 compiler source and the bundled compiler binary. |
 | `vendor/doompcfx/` | Most mature bundled port and the deepest Doom performance source in this toolkit. |
 | `tools/large-game/doom/` | Reusable large-game asset, CD, checksum, and profiling helpers copied from the local Doom workspace. |
 | `PCFX_Skills/` | This bundle: measured hardware notes, templates, evals, and the local-model wrapper. |
@@ -66,8 +71,9 @@ They are long, but they record *why* things were done. Grep them before redoing 
 ## 2. Toolchain and build
 
 ```bash
-export V810GCC="${V810GCC:-$PCFX_TOOLKIT_ROOT/prebuilt/v810-gcc}"
-export PATH="$V810GCC/bin:$PATH"
+export V810_GCC="${V810_GCC:-${V810GCC:-$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc}}"
+export V810GCC="${V810GCC:-$V810_GCC}"
+export PATH="$V810_GCC/bin:$PATH"
 ```
 
 GCC is **4.9.4**, C99/gnu99. Standard flags (from `vendor/libpcfx/examples/example.mk`, verified):

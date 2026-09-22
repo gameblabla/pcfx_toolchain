@@ -15,6 +15,6 @@ mkdir -p "$project_path"
 cp -a "$PCFX_REPO_ROOT/examples/hello/." "$project_path/"
 cat > "$project_path/TOOLKIT_ORIGIN.txt" <<EOF
 Generated from pcfx_toolchain/examples/hello.
-Set V810GCC, LIBPCFX, and CDLINK as needed, then run: make cd
+Set V810_GCC, LIBPCFX, and CDLINK as needed, then run: make cd
 EOF
 echo "created $project_path"

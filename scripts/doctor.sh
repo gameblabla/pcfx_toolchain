@@ -27,10 +27,10 @@ for dependency_path in vendor/v810-gcc vendor/libpcfx vendor/pcfxtools vendor/pc
 done
 
 if toolchain_path="$(pcfx_find_toolchain || true)"; then
-    echo "ok      V810GCC: $toolchain_path"
+    echo "ok      V810_GCC: $toolchain_path"
     "$toolchain_path/bin/v810-gcc" --version | head -1
 else
-    echo "warn    V810GCC: not found (host-only checks still work)"
+    echo "warn    V810_GCC: not found (host-only checks still work)"
 fi
 
 if [[ -x "$PCFX_BIN_DIR/pcfx-headless" ]]; then

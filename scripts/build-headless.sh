@@ -15,6 +15,9 @@ make -C "$PCFX_REPO_ROOT/vendor/pcfxemu" -f Makefile.headless \
     CHD=YES PROFILE=1 PRGNAME="$PCFX_BIN_DIR/pcfx-headless-prof"
 
 chmod 0755 "$PCFX_BIN_DIR/pcfx-headless" "$PCFX_BIN_DIR/pcfx-headless-prof"
-sha256sum "$PCFX_BIN_DIR/pcfx-headless" "$PCFX_BIN_DIR/pcfx-headless-prof" \
-    > "$PCFX_PREBUILT_DIR/headless.SHA256SUMS"
-echo "EMU     staged in $PCFX_BIN_DIR"
+(
+    cd "$PCFX_BIN_DIR"
+    sha256sum pcfx-headless pcfx-headless-prof
+) \
+    > "$PCFX_TOOLCHAIN_DIR/headless.SHA256SUMS"
+echo "EMU     installed in $PCFX_BIN_DIR"

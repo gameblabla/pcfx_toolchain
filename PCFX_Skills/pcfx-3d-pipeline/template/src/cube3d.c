@@ -11,8 +11,8 @@
  * and for what to change to make it faster or prettier.
  *
  * Build:
- *   export PCFX_TOOLKIT_ROOT=..; export V810GCC=$PCFX_TOOLKIT_ROOT/prebuilt/v810-gcc
- *   export PATH=$V810GCC/bin:$PATH
+ *   export PCFX_TOOLKIT_ROOT=..; export V810_GCC=$PCFX_TOOLKIT_ROOT/toolchain/v810-gcc
+ *   export PATH=$V810_GCC/bin:$PATH
  *   make cd && make run        # screenshot
  *   make prof                  # V810 cycle profile
  */
