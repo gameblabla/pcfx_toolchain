@@ -1,0 +1,16 @@
+[submodule "vendor/pcfxtools"]
+	path = vendor/pcfxtools
+	url = https://github.com/jbrandwood/pcfxtools.git
+[submodule "vendor/doompcfx"]
+	path = vendor/doompcfx
+	url = https://github.com/gameblabla/doompcfx.git
+[submodule "vendor/v810-gcc"]
+	path = vendor/v810-gcc
+	url = https://github.com/jbrandwood/v810-gcc.git
+[submodule "vendor/pcfxemu"]
+	path = vendor/pcfxemu
+	url = https://github.com/gameblabla/pcfxemu.git
+	branch = seek_improvements
+[submodule "vendor/libpcfx"]
+	path = vendor/libpcfx
+	url = https://github.com/gameblabla/libpcfx.git

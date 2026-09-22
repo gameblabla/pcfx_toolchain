@@ -1,0 +1,58 @@
+# Local build and release products.
+/build/
+/dist/
+/prebuilt/
+/artifacts/
+
+# External BIOS dumps. Keep them local; never commit or package them.
+/bios/
+/pcfx.rom
+/pcfxbios.bin
+/pcfxv101.bin
+/pcfx_bios.bin
+/pcfxga.rom
+/pcfxga.bin
+
+# Release archives and compiler/emulator products outside the staged folders.
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.o
+*.a
+*.elf
+*.map
+
+# Generated host/build files in examples and imported tooling.
+examples/**/build/
+examples/**/*.o
+examples/**/*.elf
+examples/**/*.map
+examples/**/*.bin
+examples/**/*.cue
+examples/**/out.bin
+examples/**/lbas.h
+tools/large-game/doom/__pycache__/
+PCFX_Skills/**/__pycache__/
+*.pyc
+
+# Host emulator build products when built in the submodule checkout.
+vendor/pcfxemu/build/
+vendor/pcfxemu/pcfx-headless
+vendor/pcfxemu/pcfx-headless-prof
+
+# SDK build products when building in place.
+vendor/libpcfx/src/*.o
+vendor/libpcfx/libpcfx.a
+vendor/libpcfx/examples/**/build/
+vendor/libpcfx/examples/**/*.o
+vendor/libpcfx/examples/**/*.elf
+vendor/libpcfx/examples/**/*.map
+vendor/libpcfx/examples/**/*.bin
+vendor/libpcfx/examples/**/*.cue
+vendor/libpcfx/examples/**/out.bin
+vendor/libpcfx/examples/**/lbas.h
+
+# OS/editor noise.
+.DS_Store
+*~

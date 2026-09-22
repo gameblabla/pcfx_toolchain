@@ -1,0 +1,3 @@
+# Continuous rotation benchmark: allow DEV_WARP to finish loading, then hold turn.
+0 NONE
+3000 RIGHT

@@ -1,0 +1,10 @@
+# Representative live-camera benchmark after DEV_WARP finishes loading.
+# Exercise diagonal movement, straight movement, both turn directions, and
+# reverse movement without relying on the stationary background replay path.
+0 NONE
+3000 +UP +RIGHT
+3600 -RIGHT
+4200 +LEFT
+4800 -UP -LEFT +DOWN +RIGHT
+5400 -RIGHT
+6000 -DOWN

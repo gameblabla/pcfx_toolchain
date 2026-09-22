@@ -1,0 +1,1 @@
+The English translation is incomplete, please prefer to refer to Japanese documentation for exhaustive use.
