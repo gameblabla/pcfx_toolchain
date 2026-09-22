@@ -90,7 +90,7 @@ counter is the FPS authority.
 
 ```bash
 # Use the project's instrumented profiler build, not an ordinary headless binary.
-V810_PROF_CSV=hist.csv "$PCFXEMU_PROF" --bios-dir "$PCFX_BIOS_DIR" --pcfx \
+V810_PROF_OUT=hist.csv "$PCFXEMU_PROF" --bios-dir "$PCFX_BIOS_DIR" --pcfx \
     --state-in warm.state --frames 3000 --dump ram after.ram game.cue 2> prof.txt
 python3 "$PCFX_TOOLKIT_ROOT/tools/large-game/doom/v810_prof_symbols.py" \
     hist.csv --elf build/game.elf --sort cycles
@@ -161,6 +161,52 @@ fix; it is justified from the C6261/C6272 manual and needs a hardware burn."
 
 What the emulator *is* good for, even here: proving you did not **regress** — that the
 program still boots, still renders, still reads the pad, and did not get slower.
+
+## 8. Is the emulator you are testing with the one in the tree?
+
+`toolchain/bin/pcfx-headless` is a build product. Updating `vendor/pcfxemu` does
+**not** rebuild it. On 2026-09-22 the installed binary predated the RAINBOW decoder
+fix it was being used to verify: a legacy stream with right-edge corruption rendered
+clean, and two agents "validated" work against the old bug. Check before trusting it:
+
+```bash
+ls -l --time-style=+%F\ %T toolchain/bin/pcfx-headless
+git -C vendor/pcfxemu log -1 --format='%ci %h %s'
+# binary older than the last emulator commit -> rebuild, then re-run your captures
+./scripts/build-headless.sh
+```
+
+## 9. Gates: read the program's own state, and prove the gate can fail
+
+A screenshot tells you *what* is on screen, not *why*. For a hang or a black screen,
+read the program's counters from a RAM dump through the **linker map** — never by
+adding offsets by hand (a hand-computed address sent one agent chasing a struct field
+that was not there):
+
+```bash
+"$PCFXEMU" --bios-dir "$PCFX_BIOS_DIR" --pcfx --frames 2500 --dump ram build/ram.bin game.cue
+grep -A1 '\.bss\.g_frames_presented' build/game.map     # address + size from the map
+```
+
+`pcfx_rainbow_mp2_startup_sync_package/tools/extract_pcfv_stats.py MAP RAM` is a
+worked parser; `emu_validate.py` next to it turns counters + screenshots into a
+pass/fail gate, and `tools/rainbow/validate_still.py` does the same for a still.
+
+A progress counter that is zero while a state machine looks "stuck" usually means the
+loop that should poll it is parked somewhere else (a wait that never returns). Find the
+loop, not the state.
+
+**A gate is evidence only after it has failed on a known-bad build.** Build the old
+binary, or the old asset, and confirm the gate says FAIL for the right reason; then
+confirm the fix says PASS. A loose threshold that passes everything is worse than no
+gate, because it is quoted as proof — the first right-edge check written here passed
+the glitched stream until it was tested against it.
+
+Keep a **known-good baseline** to diff against: the last disc that worked (the RAINBOW
+package ships its June image as a zip), or the pre-change sources rebuilt with the old
+library. Two runs at the same frame counts separate "my change broke it" from "it
+was always like this" — `LOOP=1` in the RAINBOW player turned out to be broken in the
+original too.
 
 ## Related
 

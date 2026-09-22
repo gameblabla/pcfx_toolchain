@@ -229,7 +229,7 @@ to symbolize it (`tools/v810_prof_symbols.py`, present in the doom-pcfx and
 descent-pcfx trees):
 
 ```bash
-V810_PROF_CSV=prof.csv $PCFXEMU/pcfx-headless-prof --frames 1800 game.cue 2> prof.txt
+V810_PROF_OUT=prof.csv $PCFXEMU/pcfx-headless-prof --frames 1800 game.cue 2> prof.txt
 python3 tools/v810_prof_symbols.py prof.csv game.elf | head -30
 ```
 

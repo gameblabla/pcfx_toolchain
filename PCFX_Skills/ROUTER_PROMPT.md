@@ -52,6 +52,14 @@ build/test -> inspect `git diff` -> commit when the user asked for a commit. If 
 toolchain, or emulator is unavailable, record the exact blocker and still complete every
 safe local step. Do not claim a build, screenshot, or hardware result you did not run.
 
+**A change to anything that ends up on a disc is not done until that disc ran** in
+`pcfx-headless` and a runtime check passed (frames presented, non-black picture, no
+underflows — the RAINBOW templates ship `make validate`). Host tests and a clean link
+are not enough: a libpcfx port that linked cleanly was a black screen. If it **worked
+before and is broken now**, follow `pcfx-regression-triage` step by step: baseline first,
+fresh emulator, find the spinning loop with the profiler, read state through the linker
+map, never by hand-computed addresses.
+
 ## Non-negotiables
 
 - **Profile before optimizing.** Use `pcfx-headless-prof`; see `pcfx-v810-profiling`.

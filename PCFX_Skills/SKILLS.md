@@ -1,6 +1,6 @@
 # PC-FX skill bundle — index and router
 
-Twenty-six knowledge modules for PC-FX homebrew. Each is a directory with a
+Twenty-nine knowledge modules for PC-FX homebrew. Each is a directory with a
 `SKILL.md`; some ship runnable tools next to it.
 
 **How to use this file: find your symptom or task in §1, open only the modules it
@@ -38,6 +38,8 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | New **3D** project from zero, or an asset and no code | **pcfx-3d-from-scratch**, then pcfx-bringup |
 | Not sure what to do next / stuck / about to report a result | **pcfx-self-improve** |
 | Won't boot / BIOS logo only / black screen / hang | **pcfx-bringup**, then pcfx-frame-timing §2 |
+| **Worked before, broken after a change** (port, refactor, re-encode, toolchain/emulator update) | **pcfx-regression-triage** — before touching code |
+| Code uses `eris_*` / `<eris/...>` / `-leris`, or was just moved to libpcfx | **pcfx-liberis-port** |
 | Link errors, bad CD image | **pcfx-bringup** |
 | Adding assets, loading at runtime, out of RAM | **pcfx-cd-assets** |
 | Strict renderer: no newlib/libc, float, int64, software helpers, timer or IRQ handler | **pcfx-freestanding-runtime** |
@@ -51,11 +53,12 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | "Every piece works in isolation but the renderer draws nothing" | **pcfx-3d-pipeline §1b** (the MUL high word), then §1a (the CG-base units) |
 | Horizontal pixel pairs swapped | **pcfx-king-framebuffer** (two pixels per word) |
 | Tiles, sprites, scrolling, sprite order | **pcfx-vdc-tiles-sprites** |
-| RAINBOW background/sky/FMV, scrolling RAINBOW layer, RAINBOW stream looks wrong (right-side glitch, washed out, too large) | **pcfx-rainbow** |
+| RAINBOW background/sky/FMV, scrolling RAINBOW layer, RAINBOW stream looks wrong (right-side glitch, washed out, too large), black RAINBOW player | **pcfx-rainbow** (start from its §0 templates) |
 | Colours wrong, muddy, grey; baking art | **pcfx-yuv-palette** |
 | Need to *prove* a colour is right, not just eyeball it; suspect a wrong colour-format assumption (RGB332/RGB555 instead of YUV) | **pcfx-color-verification** |
 | Two subsystems corrupting each other's memory | **pcfx-kram-layout** |
 | Tearing, flicker, one-field glitches | **pcfx-frame-timing** |
+| A vblank wait that never returns; code polls `0x80000400`/VDC status | **pcfx-frame-timing** (VD-bit anti-pattern) |
 | Colour-noise bands, especially on real hardware only | **pcfx-frame-timing** §3 |
 | Looks right in emulator, wrong on hardware | **pcfx-emulator-testing** §7 |
 
@@ -99,6 +102,10 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
    copies of a wrong predicate is a real bug that happened here.
 6. **Report what you measured, including nothing.** "No measurable change" is a valid
    result; a 0.3% delta is not a speedup.
+7. **Nothing on a disc is done until the disc ran** and a runtime check passed. And a
+   check is only evidence after you have seen it **fail on a known-bad build**.
+8. **Rebuild `pcfx-headless` after `vendor/pcfxemu` changes.** A stale binary hid a
+   RAINBOW decoder fix from two agents (pcfx-emulator-testing §8).
 
 ---
 
@@ -121,7 +128,9 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | `pcfx-input` | FX-Pad and mouse, button masks, edge detection, scripting | |
 | `pcfx-audio` | KING ADPCM, PSG, CD-DA, KRAM contention | |
 | `pcfx-2d-code-examples` | Copy-pasteable CD-DA/ADPCM, VDC 16-colour and 256-colour dual-VDC, KING scrolling, and microcode examples from working projects | |
-| `pcfx-rainbow` | HuC6271 RAINBOW video: stream format, still-image and PCFV authoring, horizontal/vertical scrolling, KING transfer setup, Doom runtime example | `tools/rainbow/` |
+| `pcfx-rainbow` | HuC6271 RAINBOW video: templates, stream format, still-image and PCFV authoring, per-field re-arm, scrolling, layer mix, emulator gates | `tools/rainbow/`, `examples/rainbow-still/` |
+| `pcfx-liberis-port` | liberis → libpcfx mapping, non-equivalent calls (VDC CR, KRAM pages, SCSI teardown), header collisions, baseline-first porting | |
+| `pcfx-regression-triage` | worked-before/broken-now procedure: baseline, fresh emulator, hot-PC spin finding, map-based state, gated fix | |
 | `pcfx-emulator-testing` | pcfx-headless, boot delay, input files, what it can't prove | |
 | `pcfx-v810-performance` | instruction costs, icache, DRAM page, measured catalogue | |
 | `pcfx-v810-cpu-model` | emulator cycle-model implementation, stalls, validation boundaries | |

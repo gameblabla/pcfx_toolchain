@@ -285,7 +285,7 @@ the DRAM block.
 For the current build, collect:
 
 ```bash
-V810_PROF_CSV=prof.csv pcfx-headless-prof --frames 3600 game.cue 2> prof.txt
+V810_PROF_OUT=prof.csv pcfx-headless-prof --frames 3600 game.cue 2> prof.txt
 sed -n '/V810 PROFILE/,/^####################/p' prof.txt
 ```
 

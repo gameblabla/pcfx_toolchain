@@ -2,7 +2,6 @@
 """Encode 256x240 PNG backgrounds into PC-FX RAINBOW YUV/DCT streams."""
 
 import argparse
-import math
 from pathlib import Path
 
 import numpy as np
@@ -20,25 +19,9 @@ ZIGZAG = [
     53, 60, 61, 54, 47, 55, 62, 63,
 ]
 
-# HuC6271 quantization tables, lifted verbatim from Team Innocent.
-#
-# These are the 128 bytes that disc's FF FF block header carries, read straight
-# out of its live RAINBOW source in KRAM (save state, KING.RAINBOWKRAMA =
-# 0x227FF, KRAM_Mode = 1). All four frames resident at the time carry the same
-# 128 bytes, and reshaping them 8x8 raster gives a table that is monotonic along
-# both axes and symmetric about the diagonal -- which is what settles the
-# storage order as NATURAL, not zigzag.
-#
-# The tables the encoder used before these were the baseline JPEG ones run
-# through a quality scaler, which is a different curve entirely: JPEG spends its
-# precision evenly and rolls off gently, while this one holds the low
-# frequencies very fine (3..7) and then slams the high corner to the 254
-# ceiling. That is a video table -- keep the DC and the first few AC terms,
-# throw the rest away.
-#
-# What these tables do NOT settle is the transform normalization; see IDCT_GAIN
-# below for why the argument that they did was wrong.
-LUMA_Q_RETAIL = [
+# MPCONV2 base tables (data offsets 0x0902 / 0x0942), in natural order.
+# Send these unchanged; DC-Y controls 0x10..0x1F select the working scale.
+LUMA_Q_BASE = [
       4,   3,   4,   5,   6,   6,   7,   7,
       3,   3,   4,   5,   6,   7,   7,  35,
       4,   4,   5,   5,   6,   7,  11,  59,
@@ -49,8 +32,8 @@ LUMA_Q_RETAIL = [
       7,   7,  11,  63, 119, 254, 254, 254,
 ]
 
-CHROMA_Q_RETAIL = [
-      8,   4,   5,   7,  19, 131, 254, 254,
+CHROMA_Q_BASE = [
+     12,   4,   5,   7,  19, 131, 254, 254,
       4,   4,   5,   7,  27, 254, 254, 254,
       4,   5,   7,  11,  99, 254, 254, 254,
       5,   6,   7,  19, 131, 254, 254, 254,
@@ -59,37 +42,6 @@ CHROMA_Q_RETAIL = [
      11,  99, 254, 254, 254, 254, 254, 254,
     254, 254, 254, 254, 254, 254, 254, 254,
 ]
-
-# Team Innocent's tables are tuned for a bandwidth its FMV had to live inside:
-# every frame streams off the disc in real time. The sky does not -- it is DMA'd
-# into KRAM once at level load and re-armed from there, so its only size limits
-# are the KRAM page-1 reserve (SKY_RESERVE_WORD * 2 = 20480 bytes, enforced in
-# gen_pcfx_sky.py) and however many bits the decoder can chew through inside one
-# 16-line raster window. Retail's ~16 KB/frame is the demonstrated ceiling for
-# the latter, since Team Innocent hits the same 15-strip geometry we do.
-#
-# Halving every step -- so the whole curve gets one more bit of precision,
-# including the 254 high-frequency ceiling that becomes 127 -- costs 11953 bytes
-# against those two ceilings and buys +1.5 dB (RGB 32.29 -> 33.79, luma 32.98 ->
-# 34.81), measured through tools/rainbow_refdec.py. That shows up as the DOOM
-# sky's dither grain surviving instead of being smeared into visible 8x8 block
-# structure across the mountain faces.
-#
-# Finer is available and still fits the KRAM reserve (1/4 = 17377 B, RGB 34.94)
-# but pushes past retail's proven per-strip decode load for the last 1.2 dB, and
-# there is no way to test a raster-deadline overrun short of a burn. 1/2 keeps a
-# 4.5 KB margin under retail. Chroma is nearly free either way (2x2 subsampling
-# caps RGB near 39.9 dB no matter how fine the chroma table is), so it is scaled
-# with luma rather than tuned separately.
-Q_REFINE = 2
-
-
-def _refine(table):
-    return [min(254, max(1, (v + Q_REFINE - 1) // Q_REFINE)) for v in table]
-
-
-LUMA_Q = _refine(LUMA_Q_RETAIL)
-CHROMA_Q = _refine(CHROMA_Q_RETAIL)
 
 # Baseline JPEG tables kept here for reference while comparing against the
 # RAINBOW decoder. The generated stream below uses the HuC6271 tables.
@@ -258,46 +210,33 @@ class BitWriter:
         return bytes(self.data), self.unstuffed
 
 
-def quant_table(base):
-    """The retail table, verbatim. No quality scaler.
-
-    There used to be a JPEG-style quality knob multiplying these. It has no
-    meaning here: the numbers above are not a quality-50 reference curve to be
-    scaled off, they are the HuC6271 table one shipping title actually feeds the
-    chip, and the block header hands them to the decoder as-is. Scaling them
-    changes the encoder's idea of the picture and the decoder's idea in lockstep
-    only as long as both stay in the range the Huffman symbol set can express --
-    and the DC/AC category argument above shows how little headroom there is.
-    """
-    return np.array(base, dtype=np.float64).reshape((8, 8))
-
-
-def fdct_matrix():
-    mat = np.zeros((8, 8), dtype=np.float64)
-    for u in range(8):
-        c = math.sqrt(1.0 / 8.0) if u == 0 else math.sqrt(2.0 / 8.0)
-        for x in range(8):
-            mat[u, x] = c * math.cos(((2 * x + 1) * u * math.pi) / 16.0)
-    return mat
-
-
-DCT = fdct_matrix()
+def working_qtables(scale):
+    """MPCONV2 0x5014: UV DC deliberately ignores the scale multiplier."""
+    if not 0 <= scale <= 15:
+        raise ValueError("RAINBOW scale must be in 0..15")
+    y = np.array(LUMA_Q_BASE, dtype=np.int64) * scale >> 2
+    uv = np.array(CHROMA_Q_BASE, dtype=np.int64) * scale >> 2
+    uv[0] = CHROMA_Q_BASE[0] >> 2
+    return (np.clip(y, 1, 254).reshape(8, 8),
+            np.clip(uv, 1, 254).reshape(8, 8))
 
 
 def pcfx_yuv(rgb):
-    r = rgb[:, :, 0].astype(np.float64)
-    g = rgb[:, :, 1].astype(np.float64)
-    b = rgb[:, :, 2].astype(np.float64)
-    y = 0.299 * r + 0.587 * g + 0.114 * b
-    u = (b - y) / 2.032 + 128.0
-    v = (r - y) / 1.140 + 128.0
-    return np.stack([y, u, v], axis=2)
+    """MPCONV2 0x3D29: round/clip to bytes before chroma reduction."""
+    r, g, b = np.asarray(rgb, dtype=np.int64).transpose(2, 0, 1)
+    y = (4898 * r + 9617 * g + 1867 * b + 8192) >> 14
+    u = -2762 * r - 5424 * g + 8187 * b
+    v = 8188 * r - 6856 * g - 1332 * b
+    u = ((u + np.where(u < 0, -8192, 8192)) >> 14) + 128
+    v = ((v + np.where(v < 0, -8192, 8192)) >> 14) + 128
+    return np.clip(np.stack([y, u, v], axis=2), 0, 255).astype(np.uint8)
 
 
 def category(value):
-    if value == 0:
-        return 0
-    return min(11, int(abs(value)).bit_length())
+    size = abs(int(value)).bit_length()
+    if size > 9:
+        raise ValueError(f"coefficient {value} exceeds RAINBOW category 9")
+    return size
 
 
 def signed_bits(value, size):
@@ -308,55 +247,69 @@ def signed_bits(value, size):
     return value - 1 + (1 << size)
 
 
-# The HuC6271's inverse transform is not orthonormal: it returns FOUR TIMES the
-# orthonormal IDCT, so the forward transform that matches it must be scaled by
-# 1/4. Both of pcfxemu's independent decoder models agree on the factor:
-#
-#   * the fast backend's jrevdct ends its second pass at
-#     DESCALE(..., CONST_BITS + PASS1_BITS + 1). Stock IJG ends at +3. Two bits
-#     fewer of descale is exactly 4x.
-#   * the 2019 hardware-accurate backend (idct.c, integer Loeffler with the
-#     chip's own coefficients) lands ((D << 5) + 32) >> 6 = D/2 in every sample
-#     of a DC-only block, where an orthonormal IDCT lands D/8. Also 4x.
-#
-# With the factor the chain is an identity: a flat block of value V has
-# orthonormal DC 8*(V-128); quantizing by the luma DC step 4 with this scale
-# gives (V-128)/2; the decoder dequantizes back to 2*(V-128) and its IDCT lands
-# (V-128) per sample, +128 = V.
-#
-# Dropping the factor (commit c3522f1) overdrove the chip 4x. Measured through
-# tools/rainbow_refdec.py, the resulting sky put 80.5% of its samples on a clip
-# rail at 13.5 dB PSNR -- the soft grey mountain backdrop decoded as a
-# black-and-white silhouette. That is what "the sky doesn't look very good" is.
-#
-# The category argument that justified removing it does not survive contact with
-# the Huffman tables. Symbol sizes 2..7 carry 3-bit DC codes while 8 and 9 cost
-# 6 and 7 bits, so the table is built for DC magnitudes under ~128 -- which is
-# where 1/4 scaling puts them (+/-64), not where full scale puts them (+/-256).
-IDCT_GAIN = 4.0
+def _fdct_pass(samples, first):
+    x = [int(v) for v in samples]
+    a0, a1, a2, a3 = (x[i] + x[7 - i] for i in range(4))
+    b0, b1, b2, b3 = (x[i] - x[7 - i] for i in range(4))
+    e0, e1, e2, e3 = a0 + a3, a0 - a3, a1 + a2, a1 - a2
+    out = [0] * 8
+    if first:
+        out[0] = (((e0 + e2) << 4) + 1) >> 1
+        out[4] = (((e0 - e2) << 4) + 1) >> 1
+    else:
+        out[0] = (e0 + e2 + 0x80) >> 8
+        out[4] = (e0 - e2 + 0x80) >> 8
+    sums = {
+        2: e1 * 0x14E8 + e3 * 0x08A9,
+        6: e1 * 0x08A9 - e3 * 0x14E8,
+        1: b0 * 0x1631 + b1 * 0x12D0 + b2 * 0x0C92 + b3 * 0x046A,
+        3: b0 * 0x12D0 - b1 * 0x046A - b2 * 0x1631 - b3 * 0x0C92,
+        5: b0 * 0x0C92 - b1 * 0x1631 + b2 * 0x046A + b3 * 0x12D0,
+        # The first-pass 0x15F2 asymmetry is present in the executable.
+        7: b0 * 0x046A - b1 * 0x0C92 + b2 * 0x12D0
+           - b3 * (0x15F2 if first else 0x1631),
+    }
+    for i, value in sums.items():
+        if first:
+            out[i] = (value + 0x100) >> 9
+        else:
+            value = (value + 0x80000) >> 16
+            value = ((value + 0x8000) & 0xFFFF) - 0x8000
+            out[i] = value >> 4
+    return out
+
+
+def mpconv_fdct(centered):
+    """MPCONV2 0x4A18: columns then rows; a flat d produces DC = 2*d."""
+    centered = np.asarray(centered, dtype=np.int64).reshape(8, 8)
+    tmp = np.empty((8, 8), dtype=np.int64)
+    for col in range(8):
+        tmp[:, col] = _fdct_pass(centered[:, col], True)
+    return np.array([_fdct_pass(row, False) for row in tmp], dtype=np.int64)
 
 
 def quantized_block(block, qtable):
-    coeff = (DCT @ (block - 128.0) @ DCT.T) / IDCT_GAIN
-    return np.rint(coeff / qtable).astype(np.int32).reshape(64)
+    coeff = mpconv_fdct(np.asarray(block, dtype=np.int64) - 128)
+    # Signed half-step bias followed by division truncating toward zero.
+    magnitude = (np.abs(coeff) + (qtable >> 1)) // qtable
+    return np.where(coeff < 0, -magnitude, magnitude).reshape(64)
 
 
 def write_huff(writer, table, symbol):
+    if symbol not in table:
+        raise ValueError(f"unrepresentable RAINBOW Huffman symbol 0x{symbol:02X}")
     code, length = table[symbol]
     writer.write(code, length)
 
 
-def encode_block(writer, coeffs, qtable, last_dc, dc_table, ac_table, chroma):
+def encode_block(writer, coeffs, last_dc, dc_table, ac_table):
     q = np.empty(64, dtype=np.int32)
     for i, src in enumerate(ZIGZAG):
         q[i] = coeffs[src]
 
     dc = int(q[0])
     diff = dc - last_dc
-    max_dc_size = 9
-    size = min(category(diff), max_dc_size)
-    if size != category(diff):
-        diff = max(-(1 << size) + 1, min((1 << size) - 1, diff))
+    size = category(diff)
     write_huff(writer, dc_table, size)
     if size:
         writer.write(signed_bits(diff, size), size)
@@ -370,13 +323,8 @@ def encode_block(writer, coeffs, qtable, last_dc, dc_table, ac_table, chroma):
         while run > 15:
             write_huff(writer, ac_table, 0x10)
             run -= 16
-        ac = max(-511, min(511, ac))
-        size = min(category(ac), 9)
+        size = category(ac)
         symbol = (run << 4) | size
-        if symbol not in ac_table:
-            ac = max(-255, min(255, ac))
-            size = min(category(ac), 8)
-            symbol = (run << 4) | size
         write_huff(writer, ac_table, symbol)
         writer.write(signed_bits(ac, size), size)
         run = 0
@@ -385,112 +333,131 @@ def encode_block(writer, coeffs, qtable, last_dc, dc_table, ac_table, chroma):
     return dc
 
 
-# Dummy data between blocks. C6272_2 section 3.4.2 only says "insert the
-# specified dummy words/blocks at stream boundaries" without giving the count;
-# the retail stream settles it. Team Innocent's live RAINBOW source in KRAM
-# (save state, KING.RAINBOWKRAMA = 0x227FF, KRAM_Mode = 1, BlockCount = 15)
-# puts exactly four zero words after every block, in all 45 blocks of the three
-# frames resident at the time. The HuC6271 needs them to flush its input buffer
-# between blocks, and section 3.4.2 warns they count toward the KRAM address.
-BLOCK_PAD = b"\x00" * 8
+# MPCONV2 0x50D9 puts one dummy word INSIDE the declared payload.
+# C6272_2 section 3.4.2(4) requires three further guard words OUTSIDE it.
+BLOCK_INNER_DUMMY = b"\x00" * 2
+BLOCK_GUARD = b"\x00" * 6
+TRANSFER_START = 6
+BLOCK_COUNT = 15
 
-# Every block begins on a 16-bit KRAM word boundary, and the way that is held is
-# by making the size field even -- the advance from one block start to the next
-# is `size_field + 10`, so an even size keeps a word-aligned stream word-aligned
-# forever.
-#
-# This is measured, not inferred. Scanning KRAM1 of all three resident Team
-# Innocent save states and following every FF FF frame header through its 15
-# blocks gives 92 frames / 1380 blocks, and of those:
-#
-#     odd block sizes: 0        odd block start offsets: 0
-#
-# Zero out of 1380 on both counts. A stream whose sizes were merely whatever the
-# entropy coder happened to emit would be odd about half the time, so this is the
-# chip's rule (the same "dummy WORDS" quantization C6272_2 3.4.2 talks about for
-# BLOCK_PAD), not an accident of their encoder.
-#
-# We were violating it: the entropy length was left as-is, so 9 of our 15 blocks
-# started on an odd byte. The HuC6271 fetches KRAM a word at a time and serves
-# the decoder bytes out of that word, so an odd block start puts every fetch for
-# that block on the wrong half -- and whether the decoder recovers depends on
-# where its input FIFO happens to be, which is why the damage showed up as PART
-# of the sky FLICKERING rather than as a stream that simply never decodes.
-#
-# Padding is a single zero byte inside the size field. The decoder stops on the
-# 16-column count, not on running out of bytes, so a trailing byte it never reads
-# costs nothing; 0x00 is chosen because 0xFF would read as a block marker.
+
 def align_entropy(entropy):
+    """Complete the 0..15 zero alignment bits after BitWriter.finish()."""
     return entropy + b"\x00" if len(entropy) & 1 else entropy
 
 
-def encode_frame(path):
-    """Encode one 256x240 frame as a HuC6271 block stream.
+def is_null_macroblock(macro):
+    return (np.all(macro[:, :, 0] <= 10)
+            and np.all((macro[:, :, 1:] >= 0x76) & (macro[:, :, 1:] <= 0x8A)))
 
-    Layout, taken byte for byte from Team Innocent's in-KRAM stream (see
-    BLOCK_PAD above) rather than inferred:
 
-        block 0     FF FF <size16> <128 bytes qtables> <entropy> <8 zero bytes>
-        block 1..14 FF F8 <size16>                     <entropy> <8 zero bytes>
+def write_null_run(writer, run):
+    write_huff(writer, HUFF_DC_Y, 0x0F)
+    write_huff(writer, HUFF_AC_Y, ((run - 1) << 4) | 1)
+    writer.write(1, 1)
 
-    Four things here used to be wrong, and each one alone desynchronises the
-    decoder after the first 16 raster lines -- which is exactly the "sky only
-    partially visible" symptom:
 
-      * every block carried the FF FF marker. FF FF starts a FRAME; the
-        continuation marker is FF F8.
-      * every block carried a copy of the quantization tables. Only the FF FF
-        block does.
-      * the size field counted UNSTUFFED entropy bytes while the stream stores
-        stuffed ones, so it under-ran every block by the number of FF 00 pairs
-        in it.
-      * block sizes were left odd, so blocks started mid-KRAM-word. Retail never
-        does this in 1380 measured blocks -- see align_entropy() above.
+def encode_frame(path, scale=0):
+    """Encode a fixed MPCONV scale, finest 0 through coarsest 15.
+
+    Each size counts physical bytes AFTER the four-byte header: first-strip
+    base tables, stuffed/aligned entropy, and the two-byte inner dummy.
+    The six external HuC6272 guard bytes do not contribute to that size.
     """
     img = Image.open(path).convert("RGB")
     if img.size != (256, 240):
         img = img.resize((256, 240), Image.Resampling.LANCZOS)
     yuv = pcfx_yuv(np.asarray(img, dtype=np.uint8))
-    qy = quant_table(LUMA_Q)
-    qc = quant_table(CHROMA_Q)
-    qtables = bytes(int(qy.flat[i]) for i in range(64)) + bytes(int(qc.flat[i]) for i in range(64))
+    qy, qc = working_qtables(scale)
+    qtables = bytes(LUMA_Q_BASE) + bytes(CHROMA_Q_BASE)
     out = bytearray()
+    emitted_scale = None
 
     for block_y in range(0, 240, 16):
         writer = BitWriter()
         dc_y = 0
         dc_u = 0
         dc_v = 0
+        null_run = 0
         for block_x in range(0, 256, 16):
             macro = yuv[block_y:block_y + 16, block_x:block_x + 16, :]
+            if is_null_macroblock(macro):
+                null_run += 1
+                continue
+            if null_run:
+                write_null_run(writer, null_run)
+                null_run = 0
+                dc_y = dc_u = dc_v = 0
+            if emitted_scale != scale:
+                write_huff(writer, HUFF_DC_Y, 0x10 + scale)
+                emitted_scale = scale
             yplane = macro[:, :, 0]
             for y0, x0 in ((0, 0), (8, 0), (0, 8), (8, 8)):
                 coeffs = quantized_block(yplane[y0:y0 + 8, x0:x0 + 8], qy)
-                dc_y = encode_block(writer, coeffs, qy, dc_y, HUFF_DC_Y, HUFF_AC_Y, False)
+                dc_y = encode_block(writer, coeffs, dc_y, HUFF_DC_Y, HUFF_AC_Y)
 
-            uplane = macro[:, :, 1].reshape(8, 2, 8, 2).mean(axis=(1, 3))
-            vplane = macro[:, :, 2].reshape(8, 2, 8, 2).mean(axis=(1, 3))
-            dc_u = encode_block(writer, quantized_block(uplane, qc), qc, dc_u, HUFF_DC_UV, HUFF_AC_UV, True)
-            dc_v = encode_block(writer, quantized_block(vplane, qc), qc, dc_v, HUFF_DC_UV, HUFF_AC_UV, True)
+            uplane = macro[:, :, 1].reshape(8, 2, 8, 2).sum(axis=(1, 3)) >> 2
+            vplane = macro[:, :, 2].reshape(8, 2, 8, 2).sum(axis=(1, 3)) >> 2
+            dc_u = encode_block(writer, quantized_block(uplane, qc), dc_u, HUFF_DC_UV, HUFF_AC_UV)
+            dc_v = encode_block(writer, quantized_block(vplane, qc), dc_v, HUFF_DC_UV, HUFF_AC_UV)
+
+        if null_run:
+            write_null_run(writer, null_run)
+            dc_y = dc_u = dc_v = 0
 
         entropy, _unstuffed_len = writer.finish()
         entropy = align_entropy(entropy)   # keep every block word-aligned
         first = block_y == 0
         tables = qtables if first else b""
-        # size counts the size field itself, the quantization tables when
-        # present, and the entropy bytes AS STORED (stuffing included).
-        size_field = 2 + len(tables) + len(entropy)
+        payload = tables + entropy + BLOCK_INNER_DUMMY
+        size_field = len(payload)
+        if size_field > 0xFFFF:
+            raise ValueError(f"strip {block_y // 16}: payload exceeds 16-bit size")
         out.extend([0xFF, 0xFF if first else 0xF8,
                     (size_field >> 8) & 0xFF, size_field & 0xFF])
-        out.extend(tables)
-        out.extend(entropy)
-        out.extend(BLOCK_PAD)
+        out.extend(payload)
+        out.extend(BLOCK_GUARD)
     return bytes(out)
+
+
+def analyze_stream(stream):
+    """Validate physical frame layout; return each stored strip's KRAM span."""
+    spans = []
+    offset = 0
+    for strip in range(BLOCK_COUNT):
+        marker = b"\xff\xff" if strip == 0 else b"\xff\xf8"
+        if offset & 1 or stream[offset:offset + 2] != marker:
+            raise ValueError(f"strip {strip}: invalid marker or word alignment")
+        if offset + 4 > len(stream):
+            raise ValueError(f"strip {strip}: truncated header")
+        size = int.from_bytes(stream[offset + 2:offset + 4], "big")
+        table_bytes = 128 if strip == 0 else 0
+        end = offset + 4 + size
+        if size & 1 or size < table_bytes + 4 or end + 6 > len(stream):
+            raise ValueError(f"strip {strip}: invalid declared payload size")
+        if strip == 0 and stream[offset + 4:offset + 132] != bytes(LUMA_Q_BASE + CHROMA_Q_BASE):
+            raise ValueError("first strip: incorrect MPCONV base tables")
+        if stream[end - 2:end] != BLOCK_INNER_DUMMY or stream[end:end + 6] != BLOCK_GUARD:
+            raise ValueError(f"strip {strip}: missing inner dummy or external guard")
+        pos = offset + 4 + table_bytes
+        while pos < end - 2:
+            if stream[pos] == 0xFF:
+                if pos + 1 >= end - 2 or stream[pos + 1] != 0:
+                    raise ValueError(f"strip {strip}: unstuffed entropy FF")
+                pos += 1
+            pos += 1
+        spans.append(4 + size + len(BLOCK_GUARD))
+        offset = end + len(BLOCK_GUARD)
+    if offset != len(stream):
+        raise ValueError("unexpected data after the 15th strip")
+    return spans
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--header", required=True)
+    parser.add_argument("--scale", type=int, choices=range(16), default=0,
+                        help="MPCONV compression rate, 0 (finest) through 15")
     parser.add_argument("triples", nargs="+", help="input.png output.bin SYMBOL triplets")
     args = parser.parse_args()
     if len(args.triples) % 3:
@@ -502,9 +469,12 @@ def main():
         dst = Path(args.triples[i + 1])
         sym = args.triples[i + 2]
         dst.parent.mkdir(parents=True, exist_ok=True)
-        stream = encode_frame(src)
+        stream = encode_frame(src, args.scale)
+        spans = analyze_stream(stream)
         dst.write_bytes(stream)
         records.append((sym, len(stream)))
+        print(f"{sym}: scale {args.scale}, {len(stream)} bytes, "
+              f"largest strip {max(spans)} bytes")
 
     header = Path(args.header)
     header.parent.mkdir(parents=True, exist_ok=True)
@@ -513,8 +483,8 @@ def main():
         "#define WAIFU_PCFX_RAINBOW_BG_ASSETS_H",
         "",
         "#define WAIFU_PCFX_RAINBOW_BG_KRAM_WORD_ADDR 0u",
-        "#define WAIFU_PCFX_RAINBOW_BG_TRANSFER_START 6u",
-        "#define WAIFU_PCFX_RAINBOW_BG_BLOCK_COUNT 15u",
+        f"#define WAIFU_PCFX_RAINBOW_BG_TRANSFER_START {TRANSFER_START}u",
+        f"#define WAIFU_PCFX_RAINBOW_BG_BLOCK_COUNT {BLOCK_COUNT}u",
     ]
     for sym, size in records:
         lines.append(f"#define {sym}_BYTES {size}u")

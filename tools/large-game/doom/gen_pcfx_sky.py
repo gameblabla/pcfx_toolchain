@@ -3,15 +3,18 @@
 
 Decodes the SKY1 patch (256x128) to RGB via PLAYPAL, expands it to a 256x240
 image (the RAINBOW plane), encodes it to a HuC6271 RAINBOW YUV/DCT stream with
-tools/gen_pcfx_rainbow_bg.py, and emits a C header holding the stream as a
-linkable byte array plus the transfer parameters. At runtime the stream is copied
+tools/gen_pcfx_rainbow_bg.py, and emits a CD asset plus a C header containing
+its size and transfer parameters. At runtime the stream is copied
 into KRAM page 1 and decoded by the RAINBOW hardware to form the sky, shown behind
 the KING framebuffer wherever the renderer leaves transparent (index-0) pixels.
 
 Usage: gen_pcfx_sky.py <wad> <out.h> [--patch SKY1]
 """
-import sys, struct, subprocess, re, argparse
+import sys, struct, re, argparse
 from pathlib import Path
+
+from gen_pcfx_rainbow_bg import encode_frame, analyze_stream, TRANSFER_START, BLOCK_COUNT
+from gen_pcfx_sfx import BANK_END_WORD, CD_SECTOR_BYTES
 
 HERE = Path(__file__).resolve().parent
 
@@ -50,7 +53,29 @@ def main():
     ap.add_argument('wad')
     ap.add_argument('out_h')
     ap.add_argument('--patch', default='SKY1')
+    ap.add_argument('--rainbow-scale', choices=['auto'] + [str(n) for n in range(16)],
+                    default='auto', help='MPCONV rate; auto picks the finest legal fit')
+    ap.add_argument('--rainbow-max-strip-bytes', type=int, default=0,
+                    help='measured hardware strip-span ceiling; 0 means no extra limit')
+    ap.add_argument('--sfx-header', type=Path,
+                    help='generated SFX header (default: pcfx_sfx.h beside out.h)')
     a = ap.parse_args()
+    if a.rainbow_max_strip_bytes < 0:
+        ap.error('--rainbow-max-strip-bytes must be nonnegative')
+
+    sfx_header = a.sfx_header or Path(a.out_h).with_name('pcfx_sfx.h')
+    try:
+        defs = sfx_header.read_text()
+    except OSError as exc:
+        sys.exit(f'SKY: generate the SFX bank/header first: {exc}')
+    match = re.search(r'^#define\s+PCFX_SFX_KRAM_BASE_WORD\s+(0x[0-9A-Fa-f]+|[0-9]+)u?\s*$',
+                      defs, re.MULTILINE)
+    if not match:
+        sys.exit(f'SKY: PCFX_SFX_KRAM_BASE_WORD missing from {sfx_header}')
+    base_word = int(match.group(1), 0)
+    if not 0 < base_word <= BANK_END_WORD or base_word % (CD_SECTOR_BYTES // 2):
+        sys.exit(f'SKY: invalid sector-aligned ADPCM base 0x{base_word:X}')
+    budget = base_word * 2
 
     from PIL import Image
 
@@ -72,31 +97,32 @@ def main():
     sky.paste(src, (0, 128))          # tiled continuation for rows 128..239
     tmp_png = HERE.parent / 'generated' / 'sky.png'
     tmp_bin = HERE.parent / 'generated' / 'sky.bin'
-    tmp_h = HERE.parent / 'generated' / 'sky_rb.h'
     tmp_png.parent.mkdir(parents=True, exist_ok=True)
     sky.save(tmp_png)
 
-    subprocess.run([sys.executable, str(HERE / 'gen_pcfx_rainbow_bg.py'),
-                    '--header', str(tmp_h), str(tmp_png), str(tmp_bin), 'SKY'],
-                   check=True)
-
-    stream = open(tmp_bin, 'rb').read()
-
-    # The sky is DMA'd to page-1 word 0 and the ADPCM sample bank starts at
-    # SKY_RESERVE_WORD (tools/gen_pcfx_sfx.py). An oversized stream does not
-    # fail loudly -- it silently overwrites the first sounds in the bank, which
-    # then decode as noise. Stream size moves with the picture and with any
-    # change to the quantization tables, so check it here rather than assume.
-    sys.path.insert(0, str(HERE))
-    from gen_pcfx_sfx import SKY_RESERVE_WORD
-    if len(stream) > SKY_RESERVE_WORD * 2:
-        sys.exit(f'SKY: stream {len(stream)} bytes exceeds the '
-                 f'{SKY_RESERVE_WORD * 2}-byte page-1 reserve; raise '
-                 f'SKY_RESERVE_WORD in tools/gen_pcfx_sfx.py')
-
-    defs = open(tmp_h).read()
-    start = re.search(r'TRANSFER_START (\d+)u', defs).group(1)
-    blocks = re.search(r'BLOCK_COUNT (\d+)u', defs).group(1)
+    # Lowest numerical MPCONV rate = highest quality. Reject a candidate on
+    # category overflow, sector-rounded overlap, or a measured strip ceiling.
+    scales = range(16) if a.rainbow_scale == 'auto' else [int(a.rainbow_scale)]
+    failures = []
+    for scale in scales:
+        try:
+            stream = encode_frame(tmp_png, scale)
+        except ValueError as exc:
+            failures.append(f'scale {scale}: {exc}')
+            continue
+        spans = analyze_stream(stream)
+        load_bytes = (len(stream) + CD_SECTOR_BYTES - 1) // CD_SECTOR_BYTES * CD_SECTOR_BYTES
+        max_strip = max(spans)
+        if load_bytes > budget:
+            failures.append(f'scale {scale}: sector load {load_bytes} > KRAM budget {budget}')
+            continue
+        if a.rainbow_max_strip_bytes and max_strip > a.rainbow_max_strip_bytes:
+            failures.append(f'scale {scale}: strip {max_strip} > limit {a.rainbow_max_strip_bytes}')
+            continue
+        break
+    else:
+        sys.exit('SKY: no legal MPCONV scale fits:\n  ' + '\n  '.join(failures))
+    tmp_bin.write_bytes(stream)
 
     # The RAINBOW stream is NOT linked into the program — it is embedded on the CD
     # and DMA'd into KRAM at runtime (the HuC6271 only decodes CD-DMA'd KRAM data).
@@ -111,12 +137,16 @@ def main():
         f.write('/* Generated by tools/gen_pcfx_sky.py — do not edit. */\n')
         f.write('#ifndef PCFX_SKY_H\n#define PCFX_SKY_H\n\n')
         f.write(f'#define PCFX_SKY_BYTES {len(stream)}u\n')
-        f.write(f'#define PCFX_SKY_TRANSFER_START {start}u\n')
-        f.write(f'#define PCFX_SKY_BLOCK_COUNT {blocks}u\n')
+        f.write(f'#define PCFX_SKY_TRANSFER_START {TRANSFER_START}u\n')
+        f.write(f'#define PCFX_SKY_BLOCK_COUNT {BLOCK_COUNT}u\n')
+        f.write(f'#define PCFX_SKY_RAINBOW_SCALE {scale}u\n')
+        f.write(f'#define PCFX_SKY_MAX_STRIP_KRAM_BYTES {max_strip}u\n')
         f.write('#endif\n')
     print(f'SKY: stream {len(stream)} bytes -> {out_bin} (CD-embedded) + {a.out_h}')
 
-    print(f'SKY: {a.patch} {w}x{h} -> RAINBOW stream {len(stream)} bytes -> {a.out_h}')
+    print(f'SKY: {a.patch} {w}x{h}, MPCONV scale {scale}, '
+          f'sector load {load_bytes}/{budget} bytes, largest strip {max_strip} bytes')
+    print('SKY: strip spans (KRAM bytes): ' + ', '.join(map(str, spans)))
 
 
 if __name__ == '__main__':

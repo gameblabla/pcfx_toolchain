@@ -100,9 +100,15 @@ def video_command(a):
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='rainbow-', dir=target.parent) as scratch:
         scratch = Path(scratch)
+        # 256x240 pixels are not square: the frame is shown as a 4:3 picture.
+        # Fit against a square-pixel 320x240 (4:3) frame first, then resample to
+        # 256x240, so a 4:3 source equals 'stretch' and 16:9 letterboxes.  Fitting
+        # straight into 256x240 squashed 4:3 movies to 256x192.  (Assumption: the
+        # visible 256-pixel line fills a 4:3 display; exact overscan unmeasured.)
         filters = {'stretch': 'scale=256:240',
-                   'contain': 'scale=256:240:force_original_aspect_ratio=decrease,pad=256:240:(ow-iw)/2:(oh-ih)/2',
-                   'crop': 'scale=256:240:force_original_aspect_ratio=increase,crop=256:240'}
+                   'contain': 'scale=320:240:force_original_aspect_ratio=decrease,'
+                              'pad=320:240:(ow-iw)/2:(oh-ih)/2,scale=256:240',
+                   'crop': 'scale=320:240:force_original_aspect_ratio=increase,crop=320:240,scale=256:240'}
         cmd = [a.ffmpeg, '-nostdin', '-v', 'error', '-i', str(Path(a.input).resolve()),
                '-map', '0:v:0', '-an', '-vf', f'fps={fps},' + filters[a.fit],
                '-frames:v', str(a.frames or (pcfv.MAX_FRAMES + 1)),
@@ -145,7 +151,7 @@ def video_command(a):
             # Pad a short source audio track, trim to the selected video timeline.
             duration = str(float(len(frames) / fps))
             subprocess.run([a.ffmpeg, '-nostdin', '-v', 'error', '-i', str(Path(a.input).resolve()),
-                            '-map', '0:a:0', '-vn', '-af', 'apad', '-t', duration,
+                            '-map', '0:a:0', '-vn', '-af', f'volume={a.audio_gain_db}dB,apad', '-t', duration,
                             '-ac', '1', '-ar', '16000', '-b:a', '32k', '-c:a', 'mp2', str(audio_path)], check=True)
             audio = audio_path.read_bytes()
         output = scratch / 'stream.pcfv'
@@ -244,6 +250,8 @@ def main():
             q.add_argument('--frames', type=int, default=0, help='0: whole clip, maximum 4096 frames')
             q.add_argument('--jobs', type=int, default=min(os.cpu_count() or 1, 8))
             q.add_argument('--audio', choices=['none', 'mp2'], default='none')
+            q.add_argument('--audio-gain-db', type=float, default=0.0,
+                           help='gain before MP2 encode; 10-bit PSG sample playback is quiet, the MP2 player example uses 8')
             q.add_argument('--fit', choices=['contain', 'crop', 'stretch'], default='contain')
             q.add_argument('--max-frame-sectors', type=int, default=4)
         elif name == 'inspect':

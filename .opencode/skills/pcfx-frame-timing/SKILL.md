@@ -1,6 +1,6 @@
 ---
 name: pcfx-frame-timing
-description: PC-FX frame pacing and vsync - the Tetsu raster counter double-read hardware bug and the correct wait-for-frame routine, where vertical blanking actually is (EVB=22/SVB=262), the 60/N fps quantization, and using a timer IRQ for a real millisecond clock. Use for tearing, frame pacing, hangs in a vsync spin, a game clock that runs slow, or measuring fps.
+description: PC-FX frame pacing and vsync - the Tetsu raster counter double-read hardware bug and the correct wait-for-frame routine, where vertical blanking actually is (EVB=22/SVB=262), the 60/N fps quantization, and using a timer IRQ for a real millisecond clock. Use for tearing, frame pacing, hangs in a vsync spin (including a VDC status VD-bit wait that never returns), a game clock that runs slow, or measuring fps.
 ---
 
 # Frame timing, vsync and the Tetsu raster
@@ -195,6 +195,58 @@ static void pcfx_present_poll(void)
 
 Order the steps **shortest-deadline-first** and **re-read the raster between them** — a
 long step can walk you out of blanking, and a raster sampled before it is stale.
+
+### ⛔ ANTI-PATTERN: waiting on the VDC status VD bit
+
+```c
+/* WRONG — hangs forever unless something else keeps VDC CR bit 3 set */
+static inline int vblank_active(void) {
+    return (*(volatile uint16_t *)0x80000400u & 0x0020u) != 0;   /* VDC-A status, VD */
+}
+static void wait_vblank(void) { while (!vblank_active()) { } while (vblank_active()) { } }
+```
+
+`0x80000400` is VDC-A's status register (I/O port `0x400` through the
+`0x80000000` memory-mapped I/O window). Its VD flag (bit 5) is raised only while that
+VDC's **CR bit 3 (vblank interrupt enable, `0x08`)** is set — `vendor/pcfxemu`
+`vdc_video.c`, `VDC_DoVBIRQTest()`: `if (CR & 0x08) status |= VDCS_VD`. There is no
+HuC6270 manual in `DOCUMENTATION/`, so this is emulator-source evidence; the Tetsu
+counter below is documented in C6261 and needs no VDC state at all. Reading the status
+register also **clears** the flags, so a second reader (or an IRQ handler) steals the
+edge.
+
+Real incident (2026-09-22): a RAINBOW player ported from liberis to libpcfx replaced
+`eris_low_sup_set_control(0,0,1,0)` — a read-modify-write that preserved CR's low
+bits — with `vdc_setreg(0, VDC_REG_CR, VDC_CR_BB)`, which writes CR = `0x0080`
+outright. VD never rose again, `wait_vblank()` never returned, and the screen stayed
+black. The RAM dump showed the CD DMA state machine "stuck", which sent two agents
+debugging SCSI: the state machine was fine, the loop that polls it was parked in
+`wait_vblank()`.
+
+Do **not** "fix" this by setting CR bit 3: that asserts a VDC interrupt every field
+and now needs an interrupt mask/handler story. **Replace the wait:**
+
+```c
+static inline unsigned tetsu_raster_stable(void)       /* §1: read until two agree */
+{
+    unsigned a, b;
+    do { a = tetsu_get_raster(); b = tetsu_get_raster(); } while (a != b);
+    return a;
+}
+static inline int vblank_active(void)                  /* §3: 262 and 0..21 */
+{
+    unsigned r = tetsu_raster_stable();
+    return r >= 262u || r < 22u;
+}
+static void wait_vblank(void)                          /* leading edge of blanking */
+{
+    while (vblank_active()) { }
+    while (!vblank_active()) { }
+}
+```
+
+`tetsu_get_raster()` returns the **decoded** line number, so compare with decoded
+constants (262, 22), never with the raw `0x20A0`/`0x3FE0` of §2's assembly.
 
 ### Detecting "a new field began"
 

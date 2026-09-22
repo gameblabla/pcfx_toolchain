@@ -78,3 +78,14 @@ blocks with the external two-byte length, append the archive after the boot imag
 the page-1 KRAM address qualifier for DMA, and validate controls plus profiler counters.
 An answer that recommends 128 pre-rendered screen poses fails because the animation set and
 world transform are extensible.
+
+### RAINBOW player cases (2026-09-22)
+
+`libpcfx-port-black-screen`, `rainbow-right-edge` and `vdc-status-frame-wait` come from
+repairing a RAINBOW+MP2 player after two agent sessions (one a small model) left it a
+black screen. Selected arms: see `results/SCORECARD.md`. They added the third failure
+pattern:
+
+- **A rule stated for one thing gets applied to its neighbour.** "KRAM is not
+  memory-mapped" became "`0x80000400` is main RAM". State the boundary of every rule
+  (here: `0x80000000–0x807FFFFF` is the I/O-port alias).

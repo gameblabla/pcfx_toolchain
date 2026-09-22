@@ -4,6 +4,9 @@
 - `hello-huexe/` — the same program converted to `HuEXE001` for the PC-FXGA loader.
 - `large-cd-assets/` — a boot image plus a generated 384 KiB external CD asset,
   linked with the streamed large-game `pcfx-cdlink` path.
+- `rainbow-still/` — a RAINBOW (HuC6271) still image from any 256x240 PNG, DMA'd
+  from CD into KRAM, re-armed per field, with endless horizontal pan; `make validate`
+  gates it in the emulator. For RAINBOW video see `../pcfx_rainbow_mp2_startup_sync_package/`.
 - `../vendor/libpcfx/examples/` — the SDK's controller, VDC, sound, SCSI, KING,
   backup-memory, and interrupt examples. They are the hardware API ground truth.
 - `../PCFX_Skills/pcfx-3d-pipeline/template/` — a verified software-3D cube template

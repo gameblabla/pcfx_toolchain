@@ -15,8 +15,8 @@ If you catch yourself about to write anything in the left column, stop and use t
 |---|---|
 | "It's tile-based, there's no bitmap mode" | KING **BG0 in 256-colour mode is a linear bitmap framebuffer**. That is how nearly every homebrew here draws. |
 | Palette is RGB 555 / RGB 888 / RGB332 | Palette is **YUV**, packed `Y8U4V4` in a 16-bit word: `Y<<8 | U<<4 | V`. See [pcfx-yuv-palette]. A screenshot rendered from a wrong RGB guess still looks like "a colour" — a vision model will not catch this. Verify numerically with [pcfx-color-verification] before trusting any colour claim. |
-| VRAM is memory-mapped at `0x8000` / `0x80000000` | **KRAM is not memory-mapped.** It is reachable *only* through KING I/O ports `0x600` (index) and `0x604` (data). |
-| Poll a status bit at `0x80000004` for vblank | Read the **Tetsu raster counter at I/O port `0x300`**, and you must read it **twice until two reads agree** (hardware bug). See [pcfx-frame-timing]. |
+| VRAM is memory-mapped at `0x8000` / `0x80000000` | **KRAM is not memory-mapped.** It is reachable *only* through KING I/O ports `0x600` (index) and `0x604` (data). `0x80000000`–`0x807FFFFF` is a memory-mapped alias of the **I/O port space** (`0x80000400` = VDC-A status, port `0x400`; `pcfxemu` `mem-handler.inc`) — not KRAM, not RAM. |
+| Poll a status bit at `0x80000004` (or the VDC status VD bit, `0x80000400` & `0x20`) for vblank | Read the **Tetsu raster counter at I/O port `0x300`**, and you must read it **twice until two reads agree** (hardware bug). VD only rises while VDC CR bit 3 is set, so one CR write turns that wait into a permanent black screen. See [pcfx-frame-timing]. |
 | Build the CD with `mkfxiso` / `cdrecord` / `mkisofs` | `bincat` then **`pcfx-cdlink`** with a `cdlink.txt`. See [pcfx-bringup]. |
 | There's a 3D accelerator you can use | The HuC6273 "Aurora" 3D chip exists **only on the PC-FXGA development board**, not in a retail PC-FX. **All 3D here is 100% software on the V810.** |
 | Screen is 320x224 | 256x240 at the 5 MHz dotclock (what everything here uses), or 320 wide at 7 MHz. |
@@ -82,7 +82,7 @@ the bundled directory.
 |---|---|
 | `vendor/libpcfx/` | The SDK: `king.h`, `tetsu.h`, `vdc.h`, `contrlr.h`, `timer.h`, `cd.h`, `sound.h`. **`vendor/libpcfx/examples/` is the single best source of correct bring-up code.** |
 | `vendor/pcfxemu/` | Mednafen-derived emulator source. The bundled `toolchain/bin/pcfx-headless` is the test harness; `PROFILE=1` builds add a V810+KING profiler. |
-| `DOCUMENTATION/` | Bundled NEC/Hudson chip manuals and translations (`C6261`=Tetsu, `C6270`=VDC, `C6271`=RAINBOW, `C6272`=KING, `C6273`=FXGA-board-only). Authoritative when the SDK is ambiguous. |
+| `DOCUMENTATION/` | Bundled NEC/Hudson chip manuals and translations (`C6230`=SoundBox/ADPCM, `C6261`=Tetsu, `C6272`=KING including the HuC6271 RAINBOW transfer and scroll rules, `C6273`=FXGA-board-only). There is **no** HuC6270 (VDC) or HuC6271 manual here; VDC facts come from `vendor/pcfxemu` and label as such. Authoritative when the SDK is ambiguous. |
 | `vendor/v810-gcc/` and `toolchain/v810-gcc/` | V810 compiler source and the bundled compiler binary. |
 | `vendor/doompcfx/` | Most mature bundled port and the deepest Doom performance source in this toolkit. |
 | `tools/large-game/doom/` | Reusable large-game asset, CD, checksum, and profiling helpers copied from the local Doom workspace. |
@@ -233,7 +233,9 @@ unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work
 | **pcfx-audio** | ADPCM sound effects and CD-DA music. |
 | **pcfx-2d-code-examples** | Real working CD-DA/ADPCM/VDC/KING/microcode code examples, including the two VDC colour-mode patterns. |
 | **pcfx-cd-assets** | Getting data off the disc at runtime; asset pipelines. |
-| **pcfx-rainbow** | RAINBOW (HuC6271) video: YUV/DCT streams, still-image and PCFV authoring, horizontal/vertical scrolling, KING transfer setup. |
+| **pcfx-rainbow** | RAINBOW (HuC6271) video: start from `examples/rainbow-still` or the PCFV+MP2 player, stream format, authoring, per-field re-arm, scrolling, emulator gates. |
+| **pcfx-liberis-port** | Moving code from liberis (`eris_*`) to libpcfx: mapping table and the calls that are not equivalent. |
+| **pcfx-regression-triage** | Worked before, broken now: baseline, fresh emulator, hot-PC spin finding, map-based state, gated fix. |
 
 Skills live in `$PCFX_SKILLS/<name>/SKILL.md`. **Read the whole skill before acting on it**, and
 copy code blocks verbatim instead of re-deriving them from the prose around them.

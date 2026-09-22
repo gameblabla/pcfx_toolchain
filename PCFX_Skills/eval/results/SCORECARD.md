@@ -114,3 +114,77 @@ measurement from a plausible estimate or ordinary headless run. Use selected ski
 | 6 | Parses i-cache tag/subblock misses, misses/field, and fixed miss cost | pending | pending |
 | 7 | Runs twice from the same warmed savestate and applies a 3% gate | pending | pending |
 | 8 | Reports missing inputs/counters as unavailable or null, never zero or estimated | pending | pending |
+
+
+---
+
+## Case `libpcfx-port-black-screen` — RAINBOW+MP2 player port, 2026-09-22
+
+Real incident: a liberis → libpcfx port linked cleanly and was a black screen. Gold
+fix: `wait_vblank()` polled the VDC status VD bit, which only rises while VDC CR bit 3
+is set; the port's `vdc_setreg(…, VDC_CR_BB)` cleared it. Replace with the Tetsu raster
+wait. Model: `Qwen3.8-27B … IQ3_S` @ :8080, temp 0.3.
+r0 = skills before this round (router picked `pcfx-bringup,pcfx-frame-timing,pcfx-rainbow`);
+r1 = after (`pcfx-regression-triage,pcfx-liberis-port,pcfx-frame-timing,pcfx-rainbow`).
+
+| # | Checkpoint | no skills | skills r0 | skills r1 |
+|---|---|---|---|---|
+| 1 | Hang is in `wait_vblank()`, not the CD DMA state machine / SCSI reset | ❌ | ✅ | ✅ |
+| 2 | VD needs VDC CR bit 3; the port's CR write cleared it (links both diffs) | ~ blamed RMW, invented bits | ❌ called the CR change "fine" | ✅ |
+| 3 | No invented hardware facts | ❌ invented `vdc_getreg()`, "display enable" bits | ❌ "0x80000400 is main RAM, no status register there" | ✅ cites pcfxemu source |
+| 4 | Replacement: Tetsu raster, double read, correct window/edge | ❌ | ✅ | ✅ |
+| 5 | Does not "fix" it by re-enabling the VDC IRQ bit | ❌ | ✅ | ✅ |
+| 6 | Verifies with runtime counters (frames presented) via map + screenshots | ~ | ✅ | ✅ |
+| 7 | Compares against the known-good liberis build; gate shown failing first | ~ | ❌ | ✅ |
+| | **score** | **1/7** | **4/7** | **7/7** |
+
+r0 failure → change: AGENTS.md said "KRAM is not memory-mapped", and the model
+over-generalized it to "`0x80000400` is RAM". AGENTS.md now says
+`0x80000000–0x807FFFFF` is the I/O-port alias. The VD trap had no anti-pattern at all;
+`pcfx-frame-timing` now has one with the replacement code, and `pcfx-liberis-port`
+lists the non-equivalent CR call.
+
+## Case `rainbow-right-edge` — legacy RAINBOW encoder framing
+
+Gold fix: strip size must count stuffed `FF 00` bytes, plus word alignment, a 2-byte
+inner dummy inside the size and three `0000H` guard words outside; the emulator hid it
+because the installed binary predated pcfxemu's stuffed-byte accounting fix.
+Routed skills both rounds: `pcfx-rainbow,pcfx-emulator-testing`.
+
+| # | Checkpoint | no skills | skills r0 | skills r1 |
+|---|---|---|---|---|
+| 1 | Size must count stored (stuffed) bytes | ❌ blamed byte padding | ✅ | ✅ |
+| 2 | Right edge = byte budget runs out before the last columns | ❌ | ~ blamed alignment | ✅ |
+| 3 | Word alignment + inner dummy in size + 6-byte guard outside | ❌ | ✅ (fix code order unclear) | ✅ correct code |
+| 4 | Emulator: stale binary / old stuffed-byte accounting; rebuild | ❌ "well-known discrepancy" | ❌ generic "lenient" | ✅ |
+| 5 | Old streams: `repair-legacy` (lossless) or re-encode | ❌ "must re-encode" | ✅ | ✅ |
+| 6 | Compression: base tables + rescale controls + null runs | ❌ DC prediction | ✅ | ✅ |
+| 7 | Verification: strict inspect + emulator gate + hardware | ~ | ~ no emulator gate | ✅ full ladder |
+| 8 | No invented tools/limits | ❌ invented decoders/SDK video | ✅ | ✅ |
+| | **score** | **0.5/8** | **6/8** | **8/8** |
+
+Both r1 prompts describe incidents the updated skills document, so they measure
+whether the skills convey the facts, not generalization. `vdc-status-frame-wait`
+(below) is the transfer test: same trap, different chip/API/story.
+
+## Case `vdc-status-frame-wait` — transfer test (VDC-B, `vdc_status()`, sprites)
+
+Same trap in a different story: CR changed from `0x0008` to `VDC_CR_SB`, frame wait
+polls `vdc_status(1) & 0x20`. Routed skills: `pcfx-frame-timing,pcfx-regression-triage,pcfx-vdc-tiles-sprites`.
+
+| # | Checkpoint | no skills | skills r1 |
+|---|---|---|---|
+| 1 | Hang is in `frame_wait()`, not sprite DMA/VDC lock-up | ❌ "VDC locks up without a SAT" | ✅ |
+| 2 | VD needs CR bit 3; new CR value cleared it | ❌ | ✅ |
+| 3 | No invented API/registers | ❌ `vdc_clear_vram()`, SAT "register 0x0E" | ✅ |
+| 4 | Tetsu raster wait (double read, wrap edge) | ❌ | ✅ canonical asm |
+| 5 | Does not re-add CR bit 3 as the fix (IRQ implications) | ❌ | ✅ explains why |
+| 6 | Verifies the loop advances (two frame counts / counters), not with the broken wait | ❌ verifies with the same VD wait | ✅ |
+| | **score** | **0/6** | **6/6** |
+
+Takeaway: the lesson transferred to a chip, API and symptom the skill does not
+describe verbatim. The unaided model's characteristic failure is unchanged since
+the first case: a plausible mechanism plus invented API names.
+
+Transcripts: `results/libpcfx-port-black-screen.*`, `results/rainbow-right-edge.*`,
+`results/vdc-status-frame-wait.*`.

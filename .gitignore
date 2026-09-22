@@ -32,7 +32,7 @@ examples/**/*.bin
 examples/**/*.cue
 examples/**/out.bin
 examples/**/lbas.h
-tools/large-game/doom/__pycache__/
+tools/**/__pycache__/
 PCFX_Skills/**/__pycache__/
 *.pyc
 

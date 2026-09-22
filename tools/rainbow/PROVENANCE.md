@@ -11,8 +11,12 @@ build machine; nothing runs on the V810.
 | `rainbow_decode.py` | Strict entropy validator + approximate host preview. Follows `pcfxemu`'s decoder for Huffman/zigzag/null/rescale semantics; the floating IDCT and chroma upsampling are approximations. |
 | `rainbow.py` | CLI: `image`, `video`, `inspect`, `repair-legacy`. Imports the two modules above plus `pcfv`. |
 | `pcfv.py` | `PCFV0001` sector container (video frames + interleaved MP2) shared by authoring, repair, and inspection. |
+| `test_rainbow.py` | Host regression tests: byte-identical to Doom's encoder, strict framing, legacy rejection + lossless repair, null runs, container limits. |
+| `validate_still.py` | Emulator gate for a still/pan disc: pan shift, whole-picture error, worst-macroblock error (strip starvation). Used by `examples/rainbow-still`. |
 
-`rainbow_codec.py` was derived from Doom PC-FX's `gen_pcfx_rainbow_bg.py`
+`rainbow_codec.py` produces byte-identical streams to Doom PC-FX's
+`gen_pcfx_rainbow_bg.py` (checked by `test_rainbow.py` at scales 0, 5 and 15; verified
+2026-09-22 on four images x four scales). It was derived from that script
 (`tools/large-game/doom/`, mirrored at `vendor/doompcfx/tools/`), which in turn
 was reverse-engineered from `MPCONV2.EXE` (base tables at data offsets
 `0x0902`/`0x0942`, integer FDCT, `0x10..0x1F` scale controls, null runs) and

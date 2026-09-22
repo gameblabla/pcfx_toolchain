@@ -18,7 +18,9 @@ headless testing.
   local Doom workspace.
 - `tools/large-game/pcfxtools/` — enhanced `pcfx-cdlink` source used for streamed
   `append` assets, LBA headers, and optional CD-DA tracks.
-- `examples/` — small bring-up, HuEXE, and large-CD-asset projects.
+- `examples/` — small bring-up, HuEXE, large-CD-asset, and RAINBOW still/pan projects.
+- `tools/rainbow/` — RAINBOW (HuC6271) still/video encoder, strict inspector, legacy
+  repair, host tests, and the still-image emulator gate (`PCFX_Skills/pcfx-rainbow`).
 - `scripts/` — dependency checks, builds, emulator execution, and release packaging.
 
 ## Non-negotiable facts

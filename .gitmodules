@@ -14,3 +14,7 @@
 [submodule "vendor/libpcfx"]
 	path = vendor/libpcfx
 	url = https://github.com/gameblabla/libpcfx.git
+[submodule "vendor/pcfx_rainbow_mp2_adpcm"]
+	path = vendor/pcfx_rainbow_mp2_adpcm
+	url = https://github.com/gameblabla/pcfx_rainbow_mp2
+	branch = simp
