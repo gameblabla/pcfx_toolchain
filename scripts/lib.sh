@@ -40,6 +40,21 @@ pcfx_require_toolchain() {
     printf '%s\n' "$found"
 }
 
+pcfx_stage_linux64_toolchain() {
+    local source="$PCFX_PREBUILT_DIR/v810-gcc"
+    local destination="$PCFX_PREBUILT_DIR/v810-gcc-linux64"
+
+    [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]] || return 0
+    [[ -x "$source/bin/v810-gcc" ]] || return 0
+
+    rm -rf -- "$destination"
+    if ! cp -al -- "$source" "$destination" 2>/dev/null; then
+        rm -rf -- "$destination"
+        cp -a -- "$source" "$destination"
+    fi
+    echo "TOOLCHAIN staged Linux64 bundle at $destination"
+}
+
 pcfx_prebuilt_tool() {
     local name="$1"
     if [[ -x "$PCFX_BIN_DIR/$name" ]]; then

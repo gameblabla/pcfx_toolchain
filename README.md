@@ -117,7 +117,10 @@ Build the host tools, SDK, and emulator, then create a source-plus-binaries arch
 
 The tarball contains the initialized source submodules, copied skills, examples,
 Python scripts, host binaries, `pcfx-headless`, and (when a toolchain is available)
-the prebuilt V810 toolchain. It excludes Git metadata, build scratch files, and BIOSes.
+the prebuilt V810 toolchain. On Linux x86_64 it also includes the explicit
+`prebuilt/v810-gcc-linux64` bundle path, pointing to the same relocatable toolchain;
+set `V810GCC` to that path when selecting it manually. It excludes Git metadata,
+build scratch files, and BIOSes.
 
 ## References
 

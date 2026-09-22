@@ -15,6 +15,7 @@ else
 fi
 
 if [[ -d "$PCFX_PREBUILT_DIR/v810-gcc" ]]; then
+    pcfx_stage_linux64_toolchain
     echo "PACKAGE including prebuilt V810 toolchain"
 else
     echo "PACKAGE warning: no prebuilt/v810-gcc; run scripts/build-toolchain.sh to include it" >&2

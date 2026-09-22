@@ -39,5 +39,6 @@ fi
 
 rm -rf "$PCFX_PREBUILT_DIR/v810-gcc"
 cp -a "$SOURCE_PATH" "$PCFX_PREBUILT_DIR/v810-gcc"
+pcfx_stage_linux64_toolchain
 echo "TOOLCHAIN staged in $PCFX_PREBUILT_DIR/v810-gcc"
 "$PCFX_PREBUILT_DIR/v810-gcc/bin/v810-gcc" --version | head -1
