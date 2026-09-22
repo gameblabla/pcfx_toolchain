@@ -10,6 +10,24 @@ you have the context budget — §2 lists what each one is for.
 
 ---
 
+## 0. Evidence priority for every task
+
+When a hardware-facing fact is unclear or sources disagree, use this order — including
+for a new bring-up, bringing up an existing project, debugging, refactoring, or
+optimization:
+
+1. Original Japanese Hudson Soft manuals in `DOCUMENTATION/ORIGINAL_JPN/`.
+2. Confirmed real-hardware tests documented in the relevant skill.
+3. `vendor/pcfxemu/` source, for emulator implementation behavior.
+4. SDK/examples, local project evidence, emulator captures, and then general knowledge.
+
+The original manuals are the ultimate hardware reference; the English translation is
+incomplete and is only a convenience. `pcfxemu` can establish what the emulator does,
+but cannot overrule the manuals or prove retail-hardware behavior. State conflicts and
+unverified inferences explicitly instead of silently choosing a lower-priority source.
+
+---
+
 ## 1. Router — go from symptom to module
 
 ### Starting or building

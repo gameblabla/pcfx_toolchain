@@ -8,6 +8,22 @@ PC-FX hardware** in this workspace. **When it contradicts your general knowledge
 retro consoles or CPUs, the bundle is right and you are wrong.** Do not reason from
 what is usually true of similar hardware.
 
+## Evidence priority
+
+For hardware-facing claims and decisions, including new bring-up, bringing up an
+existing project, debugging, refactoring, and optimization, resolve conflicts in this
+order:
+
+1. Original Japanese Hudson Soft manuals in `DOCUMENTATION/ORIGINAL_JPN/` (the English
+   translation is incomplete and is only a convenience).
+2. Confirmed real-hardware tests documented in the skills.
+3. `vendor/pcfxemu/` source, which is authoritative for emulator behavior only.
+4. SDK/examples, local project evidence, emulator output, and general knowledge.
+
+Do not turn an emulator result into a retail-hardware claim. If sources conflict, state
+the conflict and keep the higher-priority source in control rather than inventing a
+compromise.
+
 ## Before answering any PC-FX question
 
 0. If you are starting a task, are stuck, or are about to report a result, read

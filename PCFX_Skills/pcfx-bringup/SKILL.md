@@ -10,6 +10,13 @@ see it on screen, and only then change it. Bring-up has many independent ways to
 silently (no affine coefficients, no microprogram, wrong palette, wrong disc layout) and
 debugging all of them at once from a blank page does not work.
 
+This evidence discipline also applies when bringing up an existing user project or
+refactoring a working project. For hardware-facing decisions, follow the precedence in
+`PCFX_Skills/AGENTS.md`: original Japanese Hudson Soft manuals in
+`DOCUMENTATION/ORIGINAL_JPN/`, confirmed real-hardware tests, `vendor/pcfxemu/`, then
+SDK/local evidence. Existing project code and a clean emulator run are evidence to
+inspect, not authority over the manuals or hardware tests.
+
 ## 1. Copy the template
 
 ```bash

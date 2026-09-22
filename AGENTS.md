@@ -25,6 +25,15 @@ headless testing.
 
 - Do not invent PC-FX register semantics. Use the copied skills, `libpcfx`, the
   manuals in `DOCUMENTATION/`, and the emulator source.
+- For hardware-facing questions and changes, resolve conflicts in this order:
+  the original Japanese Hudson Soft manuals in `DOCUMENTATION/ORIGINAL_JPN/`,
+  confirmed real-hardware tests recorded by the skills, `vendor/pcfxemu/` source,
+  then SDK/examples, local project evidence, emulator output, and general
+  knowledge. This order applies to new bring-up, bringing up an existing user
+  project, debugging, refactoring, and optimization. The emulator source is
+  authoritative for what the emulator implements, not proof of retail hardware
+  behavior; record unresolved conflicts instead of silently choosing a lower-
+  priority source.
 - The V810 has no FPU. Performance-critical code uses fixed-point arithmetic.
 - A clean emulator run is not proof of retail hardware correctness.
 - Do not put a PC-FX or PC-FXGA BIOS in this repository or in a release tarball.

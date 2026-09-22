@@ -25,6 +25,32 @@ If you catch yourself about to write anything in the left column, stop and use t
 **Rule: if a fact is not in these skills or in the source of a project in this workspace,
 you do not know it. Go and read the code. Do not invent register numbers.**
 
+## 0.1 Evidence hierarchy: resolve conflicts from primary sources
+
+For any hardware-facing question — register semantics, timing, colour, bus/KRAM
+behaviour, boot, compatibility, or performance behaviour — use this precedence:
+
+1. **Original Japanese Hudson Soft manuals in `DOCUMENTATION/ORIGINAL_JPN/`.** These
+   are the ultimate hardware reference in this repository. `DOCUMENTATION/README.txt`
+   says the English translation is incomplete; use it as a search aid, then check the
+   original Japanese WRI figures/text when the wording or bit layout matters.
+2. **Confirmed real-hardware tests recorded in the skills.** Treat only tests with a
+   stated setup and result as evidence. They can expose an implementation discrepancy,
+   but do not silently erase or rewrite the manual claim; record the discrepancy.
+3. **`vendor/pcfxemu/` source.** This is the reference for what this emulator actually
+   implements, not proof that retail hardware behaves the same way.
+4. **SDK headers/examples, local project code, session transcripts, and emulator
+   captures.** These are useful implementation evidence, but inherit the limits of
+   their source and are not independent hardware authority.
+5. **General knowledge, analogy, or inference.** Use these only after the repository
+   evidence has been checked, and label the result as unverified when it remains one.
+
+This hierarchy applies to every workflow: a new project, bringing up an existing user
+project, debugging, refactoring, and optimization. If sources disagree, inspect the
+higher-priority source, state the conflict, and avoid inventing a compromise. For an
+emulator-only question, answer what `pcfxemu` does; do not promote that answer into a
+retail-hardware claim.
+
 ---
 
 ## 1. The workspace

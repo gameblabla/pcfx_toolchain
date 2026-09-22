@@ -17,6 +17,15 @@ printed.** Not what the code implies, not what is usually true of similar hardwa
 
 ## 1. Start every task by establishing ground truth
 
+Before trusting a code path or proposing a hardware-facing change, apply the repository
+evidence hierarchy: original Japanese Hudson Soft manuals in
+`DOCUMENTATION/ORIGINAL_JPN/`, then confirmed real-hardware tests recorded in the
+skills, then `vendor/pcfxemu/` source, then SDK/local evidence and general knowledge.
+This applies equally to a new project, bringing up a user's existing project,
+debugging, refactoring, and optimization. `pcfxemu` tells you what the emulator does;
+it does not prove retail hardware behavior. When sources disagree, record the conflict
+and investigate the higher-priority source instead of averaging the claims.
+
 Before proposing anything, spend three commands finding out where you actually are.
 
 ```bash
