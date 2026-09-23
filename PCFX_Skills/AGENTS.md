@@ -14,7 +14,7 @@ If you catch yourself about to write anything in the left column, stop and use t
 | ❌ Common false belief | ✅ Reality |
 |---|---|
 | "It's tile-based, there's no bitmap mode" | KING **BG0 in 256-colour mode is a linear bitmap framebuffer**. That is how nearly every homebrew here draws. |
-| Palette is RGB 555 / RGB 888 / RGB332 | Palette is **YUV**, packed `Y8U4V4` in a 16-bit word: `Y<<8 | U<<4 | V`. See [pcfx-yuv-palette]. A screenshot rendered from a wrong RGB guess still looks like "a colour" — a vision model will not catch this. Verify numerically with [pcfx-color-verification] before trusting any colour claim. |
+| Palette is RGB 555 / RGB 888 / RGB332 | The HuC6261 has **512 shared palette entries**, each packed `Y8U4V4` in a 16-bit word: `Y<<8 | U<<4 | V`. Direct-color KING modes bypass this palette. See [pcfx-2d-picture] for choosing an image path and [pcfx-yuv-palette] for conversion. A screenshot rendered from a wrong RGB guess still looks like "a colour" — a vision model will not catch this. Verify numerically with [pcfx-color-verification] before trusting any colour claim. |
 | VRAM is memory-mapped at `0x8000` / `0x80000000` | **KRAM is not memory-mapped.** It is reachable *only* through KING I/O ports `0x600` (index) and `0x604` (data). `0x80000000`–`0x807FFFFF` is a memory-mapped alias of the **I/O port space** (`0x80000400` = VDC-A status, port `0x400`; `pcfxemu` `mem-handler.inc`) — not KRAM, not RAM. |
 | Poll a status bit at `0x80000004` (or the VDC status VD bit, `0x80000400` & `0x20`) for vblank | Read the **Tetsu raster counter at I/O port `0x300`**, and you must read it **twice until two reads agree** (hardware bug). VD only rises while VDC CR bit 3 is set, so one CR write turns that wait into a permanent black screen. See [pcfx-frame-timing]. |
 | Build the CD with `mkfxiso` / `cdrecord` / `mkisofs` | `bincat` then **`pcfx-cdlink`** with a `cdlink.txt`. See [pcfx-bringup]. |
@@ -144,15 +144,17 @@ common mistake in this workspace. Full harness details in **[pcfx-emulator-testi
 - **CPU** NEC V810 @ 21.477 MHz. 32-bit RISC, 32 GPRs, **no branch predictor, no dcache**,
   **1 KB direct-mapped icache**. 2 MB main RAM (code + heap share it).
 - **KING (HuC6272)** — 1 MB KRAM, 4 background layers, CD/SCSI DMA, ADPCM. I/O ports only.
-- **Tetsu / VCE (HuC6261)** — video mixer, 256-entry **YUV** palette, raster counter,
+- **Tetsu / VCE (HuC6261)** — video mixer, 512-entry **YUV** palette, raster counter,
   layer priorities, cellophane (translucency).
 - **VDC ×2 (HuC6270)** — two PC-Engine-style tile/sprite chips, 64 KB VRAM each. Good for
   2D and for sprite overlays on top of a KING bitmap.
 - **RAINBOW (HuC6271)** — YUV/DCT video decoder, used for backgrounds/skies/FMV.
 - Layer order is set on Tetsu; VDC1 mixes over VDC0 on transparency.
 
-Which drawing surface to choose is the first design decision of any project — see
-**[pcfx-king-framebuffer]** (bitmap) vs **[pcfx-vdc-tiles-sprites]** (tiles/sprites).
+Which drawing surface to choose is the first design decision of any project — start with
+**[pcfx-2d-picture]** for a still image or pixel-format choice, then use
+**[pcfx-king-framebuffer]** (bitmap), **[pcfx-vdc-tiles-sprites]** (tiles/sprites), or
+**[pcfx-rainbow]** (compressed natural-picture background) for the selected path.
 
 ## 5. Performance reality check
 
@@ -211,6 +213,7 @@ unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work
 | **pcfx-3d-from-scratch** | Building a 3D program from nothing: output contract, renderer class, asset pipeline, transform/cull/sort/raster/present, ordered bring-up gates. |
 | **pcfx-self-improve** | The working loop itself: what to do next, how to profile-route, when to brute-force, how to check the picture, what you may claim. |
 | **pcfx-king-framebuffer** | Drawing a bitmap: BG0 8bpp, KRAM writes, double buffering. |
+| **pcfx-2d-picture** | Putting a picture onscreen; choosing KING 2/4/8bpp, direct YUV 64K/16M, VDC 16-colour tiles, or RAINBOW; exact palette and pixel-format rules. |
 | **pcfx-yuv-palette** | Any colour work — converting art, wrong/muddy colours. |
 | **pcfx-color-verification** | Proving a colour is actually right — numeric check against a screenshot, names a wrong-colour-format bug (RGB332/RGB555 vs. real YUV) instead of leaving it as "looks off". |
 | **pcfx-frame-timing** | Vsync, the Tetsu raster double-read, tearing, frame pacing, fps measurement. |

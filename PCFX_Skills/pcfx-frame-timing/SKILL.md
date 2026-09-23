@@ -75,7 +75,7 @@ LLM-generated code — which is why the assembly version is the one to use.
 **Always verify your frame loop actually loops:** screenshot at two different `--frames`
 values (e.g. 1400 and 1800) and confirm something moved.
 
-Landing on the *leading edge* matters: a 256-entry palette burst, a KING page flip, or an
+Landing on the *leading edge* matters: a 256-entry palette upload, a KING page flip, or an
 MPSW stop/start needs the whole blanking interval, not "somewhere past a threshold".
 
 This project has this as hand-written asm in `pcfx_tetsu_wait.S`, which is worth
@@ -144,7 +144,7 @@ static inline unsigned pcfx_blank_lines_left(void)
 than 22.** Any gate of the form `if (lines_left >= N)` with `N > 22` is dead code that
 silently disables the work forever — a real and easy mistake. Measure the cost of your
 burst in lines and gate below 22, or just do the work right after `wait_frame()` where
-you know all 22 are ahead of you. A 256-entry VCE palette burst comfortably fits.
+you know all 22 are ahead of you. The measured 256-entry VCE palette upload comfortably fits.
 
 ### ⛔ ANTI-PATTERN: `spin_to(raster N)`
 
@@ -300,7 +300,7 @@ Use both: timer for *time*, raster for *presentation*.
 
 ## 6. Do these only in blanking
 
-- palette writes (a 256-entry burst)
+- palette writes (the measured 256-entry upload)
 - KING mode / display-page changes
 - the double-buffer page flip
 

@@ -1,0 +1,3 @@
+Created with scripts/new-project.sh from examples/hello, then adapted from
+examples/rainbow-still for a static image loaded from an appended CD asset.
+Set PCFX_BIOS_DIR for emulator capture; run make cd to build the disc.

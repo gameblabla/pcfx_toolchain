@@ -1,0 +1,7 @@
+binary ./out.bin
+name PC-FX Toolkit Hello
+maker homebrew
+makerid HBR
+date 20260922
+country 1
+version 256

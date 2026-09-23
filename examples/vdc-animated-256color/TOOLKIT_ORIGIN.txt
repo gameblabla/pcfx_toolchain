@@ -1,0 +1,2 @@
+Generated from pcfx_toolchain/examples/hello.
+Set V810_GCC, LIBPCFX, and CDLINK as needed, then run: make cd

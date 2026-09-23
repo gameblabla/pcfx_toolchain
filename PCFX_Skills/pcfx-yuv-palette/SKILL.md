@@ -6,7 +6,7 @@ description: PC-FX colour - the HuC6261 Y8U4V4 YUV palette format, converting RG
 # Colour: the HuC6261 YUV palette
 
 **The PC-FX palette is YUV, not RGB.** This is the single most common colour mistake.
-There are 256 palette entries in the Tetsu/VCE chip, each a 16-bit word:
+There are **512 palette entries** in the Tetsu/VCE (HuC6261) chip, each a 16-bit word:
 
 ```
  Y8U4V4:   (Y << 8) | (U << 4) | V
@@ -64,6 +64,24 @@ converter seeds analytically, then searches a ±3 window in U4/V4 (and a small Y
 scoring with a **green-weighted** error metric (`2*dr² + 4*dg² + db²`) because the eye is
 most sensitive to green error.
 
+## Conversion timing preference
+
+Use these options in order:
+
+1. **Offline asset-build conversion (preferred):** generate the final Y8U4V4 palette,
+   index map, and packed pixel data on the host. Ship those results so the V810 does no
+   avoidable color conversion during play.
+2. **One-time conversion at load time:** use this if the disc stores a compact or source
+   representation. Convert after loading and before gameplay, budgeting for load delay
+   and the 2 MB main RAM. Keep palette writes in vertical blanking.
+3. **Per-runtime conversion (last resort):** only convert values that genuinely change
+   during play. Do not run palette searches or per-pixel RGB-to-YUV conversion each
+   frame. Cache results, bound the work, and profile it on the V810.
+
+The load-time option is a one-time setup cost, not a frame-loop operation. This matters
+because the V810 has no FPU and local projects measured substantial costs from runtime
+RGB-to-YUV searches; see [pcfx-v810-profiling] before keeping conversion in a hot path.
+
 Two rules that came out of doom-pcfx's colour work:
 
 - **`forbid_grey`**: if the source colour has any real saturation (`max-min >= 8`), the
@@ -77,10 +95,17 @@ colours drift between your asset tool and runtime. wolf-pcfx keeps only the YUV 
 *reconstructs* RGB from it when the engine needs `.r/.g/.b`, rather than keeping two
 tables that can disagree — do that.
 
+When matching a PC version that already has a small game palette, map those source
+colors directly through this converter. Do not first quantize them to RGB332 and then
+convert the reduced colors to YUV: RGB332 is a possible software index scheme, not a
+HuC6261 palette format, and that extra lossy step can cause a visible mismatch. For
+larger color sets, choose/quantize against the RGB values reconstructed from the final
+Y8U4V4 palette, and build the pixel-index map from that same palette.
+
 ## Palette layout across layers
 
-The 256 entries are shared by every layer. Each layer gets a **base offset** into the
-palette, so layers carve it up:
+The 512 entries are shared by every palette-based layer. Each layer gets a **base
+offset** into the palette, so layers carve it up:
 
 ```c
 tetsu_set_king_palette(bg0, bg1, bg2, bg3);  /* base entry per KING BG   */
@@ -88,10 +113,19 @@ tetsu_set_vdc_palette(vdcbg, vdcspr);        /* base entry per VDC use   */
 tetsu_set_rainbow_palette(rainbow);          /* base entry for RAINBOW   */
 ```
 
-A KING BG0 8bpp bitmap wants all 256 entries at base 0. If you also need VDC sprites or
-RAINBOW, they must live in a sub-range — e.g. descent-pcfx puts RAINBOW at base 256 and
-leaves 0..255 to BG0; emeraldpcfx puts VDC object palettes at 256+ in groups of 16.
-Plan this before you bake art.
+A KING BG0 8bpp bitmap uses a 256-index window at base 0 (entries 0..255). Since pixel
+index 0 is transparent, an opaque picture has 255 usable indices in that window. If you
+also need VDC sprites or palette-mode RAINBOW, they can live in another sub-range —
+descent-pcfx puts RAINBOW at base 256 and leaves 0..255 to BG0; emeraldpcfx puts VDC
+object palettes at 256+ in groups of 16.
+
+The HuC6261 offset registers store the base in two-entry units.
+`tetsu_set_king_palette()`, `tetsu_set_vdc_palette()`, and
+`tetsu_set_rainbow_palette()` accept an even base entry number (for example, `256`), and
+libpcfx divides it by two before writing the register. Keep bases even and in `0..510`.
+See `vendor/libpcfx/src/tetsu.S` and the formula in
+`DOCUMENTATION/ENGLISH_TRANSLATION/C6261/C6261.md` §2.2.3. Direct YUV picture modes do
+not use a palette base. Plan this before you bake art.
 
 VDC layers use 16-colour sub-palettes: a tile/sprite names a **palette group**, and all
 its pixels must fall in that group's 16 entries. emeraldpcfx draws 8bpp GBA objects on the
@@ -106,10 +140,11 @@ bit doom-pcfx's WAD assets.
 
 ## When it is safe to write the palette
 
-**Write palette entries during vertical blanking.** A 256-entry burst during active
-display causes visible glitches; both wolf-pcfx (`video: keep VCE palette and KING mode
-writes out of active display`) and doom-pcfx (`video: flush VCE palette during blanking`)
-shipped fixes for exactly this. See [pcfx-frame-timing].
+**Write palette entries during vertical blanking.** A 256-entry update during active
+display caused visible glitches in wolf-pcfx (`video: keep VCE palette and KING mode
+writes out of active display`) and doom-pcfx (`video: flush VCE palette during blanking`).
+Those projects updated a 256-entry window; the HuC6261 palette RAM itself has 512
+entries. See [pcfx-frame-timing].
 
 Converting a whole palette at runtime is expensive: doom-pcfx measured ~8 ms/frame plus
 114–156 ms freezes from doing RGB→YUV searches during gameplay. **Pre-convert every

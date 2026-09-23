@@ -1,6 +1,6 @@
 # PC-FX skill bundle — index and router
 
-Twenty-nine knowledge modules for PC-FX homebrew. Each is a directory with a
+Thirty knowledge modules for PC-FX homebrew. Each is a directory with a
 `SKILL.md`; some ship runnable tools next to it.
 
 **How to use this file: find your symptom or task in §1, open only the modules it
@@ -49,12 +49,13 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | Situation | Read |
 |---|---|
 | Bitmap / software-rendered output | **pcfx-king-framebuffer** |
+| **Put a PNG/still picture onscreen**, or choose among 8bpp, 16-color, 64K/high-color, and 16M modes | **pcfx-2d-picture** first; it routes to KING BG0, VDC, RAINBOW, or the direct-YUV path and explains palette/index handling. |
 | Software-3D renderer black/blank; transform or page-flip bugs | **pcfx-3d-pipeline §1 first** — it names both causes — then pcfx-king-framebuffer, pcfx-emulator-testing |
 | "Every piece works in isolation but the renderer draws nothing" | **pcfx-3d-pipeline §1b** (the MUL high word), then §1a (the CG-base units) |
 | Horizontal pixel pairs swapped | **pcfx-king-framebuffer** (two pixels per word) |
 | Tiles, sprites, scrolling, sprite order | **pcfx-vdc-tiles-sprites** |
 | RAINBOW background/sky/FMV, scrolling RAINBOW layer, RAINBOW stream looks wrong (right-side glitch, washed out, too large), black RAINBOW player | **pcfx-rainbow** (start from its §0 templates) |
-| Colours wrong, muddy, grey; baking art | **pcfx-yuv-palette** |
+| Colours wrong, muddy, grey; matching a PC version's palette or baking art | **pcfx-yuv-palette** plus **pcfx-2d-picture** for indexed-image mapping; use **pcfx-color-verification** to check the output numerically. |
 | Need to *prove* a colour is right, not just eyeball it; suspect a wrong colour-format assumption (RGB332/RGB555 instead of YUV) | **pcfx-color-verification** |
 | Two subsystems corrupting each other's memory | **pcfx-kram-layout** |
 | Tearing, flicker, one-field glitches | **pcfx-frame-timing** |
@@ -121,6 +122,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | `pcfx-cd-assets` | LBA mechanism, CD→RAM/KRAM, DMA vs PIO, RAM budget | |
 | `pcfx-kram-layout` | KRAM pages, per-engine routing, coexistence, corruption | |
 | `pcfx-king-framebuffer` | BG0 256-colour bitmap, KRAM layout, double buffering | |
+| `pcfx-2d-picture` | Still-picture route selection, KING 2/4/8bpp and direct-YUV formats, 512-entry palette offsets, VDC 16-color groups | |
 | `pcfx-vdc-tiles-sprites` | the two HuC6270s, BAT, SAT, scrolling, layering | |
 | `pcfx-yuv-palette` | HuC6261 Y8U4V4, RGB conversion, palette layout | `rgb_to_yuv.py` |
 | `pcfx-color-verification` | numeric proof of on-screen colour vs. intended palette word; names wrong-colour-format bugs (RGB332/RGB555/RGB444 vs. real YUV) | `check_palette_reference.py` |

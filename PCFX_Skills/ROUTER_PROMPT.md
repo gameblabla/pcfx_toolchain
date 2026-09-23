@@ -42,6 +42,13 @@ compromise.
    section number or a hardware constant** — that is the failure mode this bundle
    exists to prevent.
 
+For requests to show a still image, convert a PNG, or choose 8bpp/16-color/high-color
+output, open `pcfx-2d-picture` before writing code. It chooses the drawing engine and
+defines the palette/index rules; then open the selected implementation module. The
+HuC6261 has 512 shared Y8U4V4 palette entries. KING 64K/16M modes use direct YUV and do
+not use that palette. Prefer image conversion during the offline asset build; convert at
+load time only when needed, and keep per-frame conversion as the last resort.
+
 ## Execution contract for coding-agent tasks
 
 When the user asks to inspect, change, build, test, or commit a repository, act as an
