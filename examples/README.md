@@ -15,6 +15,8 @@
 - `bios-save-game/` — star-catching mini-game with BIOS `/SRAM` score save/load.
 - `game-demo-common/` — shared 8bpp HUD and frame-wait helpers for the small game demos.
 - `hello/` — standard PC-FX CD bring-up using the verified KING BG0 bitmap template.
+- `palette-fade/` — a static indexed KING picture faded by 16 blanking-safe palette
+  writes per field; measured at 60 updates per second in the headless emulator.
 - `hello-huexe/` — the same program converted to `HuEXE001` for the PC-FXGA loader.
 - `large-cd-assets/` — a boot image plus a generated 384 KiB external CD asset,
   linked with the streamed large-game `pcfx-cdlink` path.

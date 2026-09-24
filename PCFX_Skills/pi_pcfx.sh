@@ -29,10 +29,38 @@ if ! curl -sf -m 5 "$ENDPOINT/v1/models" >/dev/null 2>&1; then
   exit 1
 fi
 
-# pi's model catalogue is keyed by model id; use whatever the server is serving
-# so this keeps working when the loaded model changes.
-MODEL="${PCFX_LLM_MODEL:-$(curl -sf "$ENDPOINT/v1/models" \
-  | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"][0]["id"])')}"
+# pi's image read tool checks the selected model's declared `input` types.
+# A server can advertise a vision model under its GGUF filename while pi's
+# models.json registers the same endpoint as a short id with input=[text,image].
+# Passing the unknown filename makes pi create a text-only fallback model and
+# silently omit image pixels. Prefer the matching configured id in that case.
+SERVER_INFO="$(curl -sf -m 5 "$ENDPOINT/v1/models")"
+MODEL="${PCFX_LLM_MODEL:-$(printf '%s' "$SERVER_INFO" | python3 -c '
+import json, os, pathlib, sys
+server = json.load(sys.stdin)
+entry = server["data"][0]
+served_id = entry["id"]
+capabilities = set(entry.get("capabilities", []))
+for item in server.get("models", []):
+    if item.get("model") == served_id:
+        capabilities.update(item.get("capabilities", []))
+config_path = pathlib.Path.home() / ".pi/agent/models.json"
+try:
+    providers = json.loads(config_path.read_text()).get("providers", {})
+except (OSError, ValueError):
+    providers = {}
+provider = providers.get(os.environ.get("PCFX_LLM_PROVIDER", "local-llm"), {})
+models = provider.get("models", [])
+configured = next((m for m in models if m.get("id") == served_id), None)
+if configured:
+    print(served_id)
+elif "multimodal" in capabilities:
+    matches = [m for m in models if "image" in m.get("input", [])
+               and served_id.lower().startswith(m.get("id", "").lower())]
+    print(matches[0]["id"] if len(matches) == 1 else served_id)
+else:
+    print(served_id)
+')}"
 
 MODE="${PCFX_SKILL_MODE:-router}"
 

@@ -140,7 +140,7 @@ bit doom-pcfx's WAD assets.
 
 ## When it is safe to write the palette
 
-**Write palette entries during vertical blanking.** A 256-entry update during active
+**Never write palette RAM during active display. Write palette entries during vertical blanking.** A 256-entry update during active
 display caused visible glitches in wolf-pcfx (`video: keep VCE palette and KING mode
 writes out of active display`) and doom-pcfx (`video: flush VCE palette during blanking`).
 Those projects updated a 256-entry window; the HuC6261 palette RAM itself has 512
@@ -152,4 +152,5 @@ palette you will need**, at build time or at load time, never in the frame loop.
 
 ## Related
 
-[pcfx-king-framebuffer] · [pcfx-vdc-tiles-sprites] · [pcfx-frame-timing].
+[pcfx-king-framebuffer] · [pcfx-vdc-tiles-sprites] · [pcfx-frame-timing] ·
+[pcfx-palette-transitions].

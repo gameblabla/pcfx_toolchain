@@ -215,6 +215,7 @@ unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work
 | **pcfx-king-framebuffer** | Drawing a bitmap: BG0 8bpp, KRAM writes, double buffering. |
 | **pcfx-2d-picture** | Putting a picture onscreen; choosing KING 2/4/8bpp, direct YUV 64K/16M, VDC 16-colour tiles, or RAINBOW; exact palette and pixel-format rules. |
 | **pcfx-yuv-palette** | Any colour work — converting art, wrong/muddy colours. |
+| **pcfx-palette-transitions** | Fast indexed-screen fades, startup garbage, and blanking-safe palette animation. |
 | **pcfx-color-verification** | Proving a colour is actually right — numeric check against a screenshot, names a wrong-colour-format bug (RGB332/RGB555 vs. real YUV) instead of leaving it as "looks off". |
 | **pcfx-frame-timing** | Vsync, the Tetsu raster double-read, tearing, frame pacing, fps measurement. |
 | **pcfx-input** | Reading the FX-Pad. |

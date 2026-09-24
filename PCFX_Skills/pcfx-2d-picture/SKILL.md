@@ -260,6 +260,54 @@ For a game with an existing finite palette:
    [pcfx-color-verification] for numeric palette-word checks; a vision model can describe
    gross layout, but it cannot reliably tell whether a YUV color is the right one.
 
+For an existing game port, make that comparison a short, repeatable gate before
+editing color code:
+
+1. Name one stable scene and its PC source image or palette table. A title fade,
+   menu transition, and gameplay frame are different references; comparing them
+   produces a false color diagnosis.
+2. Save the input script, exact frame number, disc build command, and screenshot
+   together. Capture one no-input baseline first. A count of distinct RGB triples
+   only detects a nearly blank frame; it does not measure color fidelity.
+3. Trace one wrong source color through source RGBA -> palette selection/index ->
+   Y8U4V4 word -> uploaded palette slot -> screen pixel. Check each value before
+   changing quantization or KING mode. If the source uses more than 255 visible
+   colors, report the indexed-mode loss explicitly and evaluate direct YUV using
+   `examples/king-still-modes/`.
+4. After two screenshots that do not distinguish hypotheses, stop varying input
+   frame numbers. Inspect the relevant stage and add a small numeric check. If
+   RAM state matters, resolve the current ELF/map symbol; a prior session's
+   absolute address is not stable across builds.
+
+Examples and transcripts copied from other workspaces may contain old relative
+or absolute paths. Resolve tools and source assets in the current checkout
+before interpreting a failed build as a hardware or image-format defect.
+
+**Do not invent an inverse YUV formula.** For a numeric round trip use
+`yuv_to_rgb(word)` from `pcfx-yuv-palette/rgb_to_yuv.py`, which models this
+target's conversion. A generic BT.601 formula or manually expanded 4-bit
+chroma can report large false errors for a correct palette word. Compare the
+actual emulator pixel to this converter and `pcfx-color-verification` before
+blaming YUV conversion. Also, a composed game frame can contain overlay text,
+sprites, fades, and status art absent from a background PNG; compare a region
+known to contain only the source background or use a native frame capture.
+When reproducing a C palette lookup in NumPy, convert every sampled channel
+with `int(channel)` before `<<`, `-`, or squared-error math. `numpy.uint8`
+arithmetic can wrap and produce false palette indices or distances without
+raising an error; a previous Dirty Pair comparison turned an exact index 100
+into 226 this way.
+For Pillow's flattened `getdata()` or a baked pixel byte array, `(x, y)` is
+at `y * width + x`. Swapping it to `x * width + y` can make a correct bake
+look as if it assigned the wrong palette index at the sampled coordinate.
+For Pillow asset baking, `Image.convert("P", palette=...)` expects a palette
+selector (`WEB` or `ADAPTIVE`), while `Image.MEDIANCUT` is a `quantize()`
+method. Passing `Image.MEDIANCUT` as `convert`'s palette argument can select
+the web-safe palette and change colors even in a 19-color source. Use
+`im.convert("RGB").quantize(colors=255, method=Image.Quantize.MEDIANCUT,
+dither=Image.Dither.NONE)` for an actual median-cut call, or build an exact
+palette when the source has at most 255 opaque colors. Assert source-to-baked
+RGB equality for that exact-palette case before accepting a screenshot.
+
 If the frame uses more colors than an indexed palette can preserve, consider KING 64K
 direct YUV for a pixel-precise bitmap, or RAINBOW for photographic art that can use its
 compressed still-image format. Direct 64K still requires RGB-to-Y8U4V4 conversion; it is

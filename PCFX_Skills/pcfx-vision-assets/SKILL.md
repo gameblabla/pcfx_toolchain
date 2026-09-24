@@ -31,6 +31,16 @@ concluding anything about image quality.
 
 ## 2. The helper
 
+When using `pi`, check the selected model ID before trusting its `read` tool.
+If the endpoint advertises a GGUF filename that is absent from pi's
+`models.json`, pi creates a text-only fallback model and `read` says
+`[Current model does not support images. The image will be omitted from this
+request.]` even though the endpoint's `/v1/models` says `multimodal`.
+`PCFX_Skills/pi_pcfx.sh` resolves the server filename to the matching
+configured model with `input: ["text", "image"]`. A successful `read` result
+contains `Read image file [image/png]` with an image attachment and no
+omission warning. Verify this before concluding that Qwen cannot see an image.
+
 ```bash
 python3 PCFX_Skills/pcfx-vision-assets/describe_image.py shot.png
 python3 .../describe_image.py shot.png --prompt "Is the screen entirely black? Answer yes or no."

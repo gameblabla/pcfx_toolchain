@@ -56,6 +56,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | Tiles, sprites, scrolling, sprite order | **pcfx-vdc-tiles-sprites** |
 | RAINBOW background/sky/FMV, scrolling RAINBOW layer, RAINBOW stream looks wrong (right-side glitch, washed out, too large), black RAINBOW player | **pcfx-rainbow** (start from its §0 templates) |
 | Colours wrong, muddy, grey; matching a PC version's palette or baking art | **pcfx-yuv-palette** plus **pcfx-2d-picture** for indexed-image mapping; use **pcfx-color-verification** to check the output numerically. |
+| Full-screen fade or title transition is slow, or startup shows garbage | **pcfx-palette-transitions** plus **pcfx-frame-timing** and **pcfx-king-framebuffer**; check display initialization and KRAM address units. |
 | Need to *prove* a colour is right, not just eyeball it; suspect a wrong colour-format assumption (RGB332/RGB555 instead of YUV) | **pcfx-color-verification** |
 | Two subsystems corrupting each other's memory | **pcfx-kram-layout** |
 | Tearing, flicker, one-field glitches | **pcfx-frame-timing** |
@@ -125,6 +126,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | `pcfx-2d-picture` | Still-picture route selection, KING 2/4/8bpp and direct-YUV formats, 512-entry palette offsets, VDC 16-color groups | |
 | `pcfx-vdc-tiles-sprites` | the two HuC6270s, BAT, SAT, scrolling, layering | |
 | `pcfx-yuv-palette` | HuC6261 Y8U4V4, RGB conversion, palette layout | `rgb_to_yuv.py` |
+| `pcfx-palette-transitions` | Static indexed-screen fades, blanking-safe palette updates, startup order, and a 60 Hz example | `examples/palette-fade` |
 | `pcfx-color-verification` | numeric proof of on-screen colour vs. intended palette word; names wrong-colour-format bugs (RGB332/RGB555/RGB444 vs. real YUV) | `check_palette_reference.py` |
 | `pcfx-frame-timing` | raster double-read bug, vblank window, 60/N, timer IRQ | |
 | `pcfx-input` | FX-Pad and mouse, button masks, edge detection, scripting | |
