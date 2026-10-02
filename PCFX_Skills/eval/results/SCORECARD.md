@@ -7,6 +7,27 @@ Grading: each case has N checkpoints taken from the real commit. Score = hit/N.
 
 ---
 
+## Case `vdc-bat-row-address` — Dirty Pair PC-FX, 2026-09-24
+
+Local model at `127.0.0.1:8080`, selected `pcfx-vdc-tiles-sprites` and
+`pcfx-emulator-testing`, temperature 0.3. The prompt and broken loop are in
+`cases/vdc-bat-row-address/task.md`. The observed fix is in
+`dirty_pair_pcfx/pcfx-port/src/dp_pcfx_vdc.c`.
+
+| Checkpoint | initial skill | revised skill |
+|---|---|---|
+| Bottom pair address is `top+64`, where `top=(row*2)*64+col*2` | pass | pass |
+| Loop covers 12 semantic rows, not 24 BAT rows | **fail** | pass |
+| Full 1,536-word live BAT versus shadow check | pass | pass |
+
+The first answer named the bad address but kept the 24-row loop. The revised
+skill includes the full upload loop and explicitly names the semantic-row
+bound. The second answer gave both corrected expressions and the BAT check.
+This is a read-only model answer check; it does not establish that the model
+independently edited and built the game.
+
+---
+
 ## Case `vblank-window` — doom-pcfx `32cf6d4`
 
 "video: fix vblank window to real C6261 EVB=22/SVB=262, reorder presenter"

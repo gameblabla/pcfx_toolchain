@@ -15,7 +15,7 @@
  * longer that line, i.e. the counter has wrapped into the next frame's
  * blanking. Returning exactly on that wrap is the leading edge of vertical
  * blanking, which is what the C-side callers (video_wait_vsync, via
- * pcfx_time.c) contract on: a 256-entry VCE palette burst, a KING page flip
+ * pcfx_time.c) contract on: a VCE palette upload, a KING page flip
  * or an MPSW stop/start must begin at the start of blanking with the whole
  * interval ahead of it, not "somewhere past a threshold" (C6261 2.1.3(5)).
  *

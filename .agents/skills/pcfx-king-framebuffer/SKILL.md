@@ -149,9 +149,12 @@ Sizes are enum steps, not pixels: `KING_BGSIZE_8/16/32/64/128/256/512/1024` (102
 only). Modes: `4_PAL`, `16_PAL`, `256_PAL`, `64K`, `16M`, and `| KING_BGMODE_BAT` for
 block-attribute-table (tiled) variants.
 
-**BG0 requires the rotate microprogram** (8 `KING_CODE_ROTATE` slots then `KING_CODE_NOP`)
-**and explicit affine coefficients** at registers `0x38..0x3d`. Without either, the plane
-is blank or noise. See [pcfx-bringup].
+The [pcfx-bringup] template enables BG0 rotation, so it needs eight
+`KING_CODE_ROTATE` slots and explicit affine coefficients at registers `0x38..0x3d`.
+For a normal bitmap, clear REG.12's rotation switch and use direct-CG fetches instead:
+two slots for 4bpp, four for 8bpp, or eight for 64K/16M, in the microprogram bank
+selected by the CG base address. The original C6272 manual lists 16M only for the
+non-rotation path. Do not mix normal direct-CG instructions with rotation enabled.
 
 ### Free 2:1 horizontal scaling
 
@@ -210,7 +213,24 @@ The framebuffer blit is usually one of the top costs in a software renderer.
 
 ## 6. Other bit depths
 
-`KING_BGMODE_16_PAL` (4bpp) halves KRAM write traffic per pixel and is listed as an
+For a still-picture path and full format/palette decision table, see [pcfx-2d-picture].
+The KING format enum selects the pixel representation for each background plane:
+
+| Mode | Pixels per 16-bit KRAM word | Storage at 256×240 | Color source |
+|---|---:|---:|---|
+| `KING_BGMODE_4_PAL` | 8 (2bpp) | 15,360 bytes | 4 Tetsu palette indices |
+| `KING_BGMODE_16_PAL` | 4 (4bpp) | 30,720 bytes | 16 Tetsu palette indices |
+| `KING_BGMODE_256_PAL` | 2 (8bpp) | 61,440 bytes | 256 Tetsu palette indices |
+| `KING_BGMODE_64K` | 1 (16bpp) | 122,880 bytes | Direct Y8U4V4, no palette |
+| `KING_BGMODE_16M` | 2 pixels / 2 words | 122,880 bytes | Direct YUV888 with U/V shared by a horizontal pixel pair |
+
+For indexed formats, the leftmost pixel occupies the most-significant bits of the word.
+Index 0 is transparent. In direct 64K/16M formats, Y=0 is transparent. Direct 64K/16M
+are not RGB565/RGB888 storage; see [pcfx-2d-picture] for the YUV layout and the
+unverified-on-retail-hardware boundary. Changing this enum alone does not provide a
+matching KRAM asset or fetch microprogram.
+
+`KING_BGMODE_16_PAL` halves KRAM write traffic per pixel vs 8bpp and is an
 **unvalidated but promising** lever in doom-pcfx's notes (two 4bpp BGs ≈ same clear cost,
 half the traffic). `KING_BGMODE_64K` is direct colour with no palette; measured in
 3DCharacterSpinning at 8bpp **2.7–3.0 fps** vs high-colour **2.6–2.7 fps** — roughly half

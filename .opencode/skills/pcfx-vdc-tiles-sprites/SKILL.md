@@ -107,6 +107,87 @@ undrawn. Plan art around 16-colour groups from the start.
 Group bases are set with `tetsu_set_vdc_palette(vdcbg, vdcspr)`. See [pcfx-yuv-palette]
 for the colour format and the layer palette layout.
 
+**Pixel value zero is transparent even if palette entry zero contains a visible
+colour.** An imported atlas may use source palette slot zero as an opaque colour;
+writing that slot as VDC pixel zero makes holes. Dirty Pair's Stage 1 atlas uses
+all 16 source slots, but no 8x8 tile contains both slots zero and one. Its
+VDC path uses two BAT palette groups: tiles containing slot zero encode it as
+pixel one and use a group whose entry one has slot zero's colour; the other
+tiles use the ordinary group whose entry one has slot one's colour. Check this
+per-tile disjointness before using that mapping on a changed atlas. Keep the
+NES background-priority/opacity mask separate from the source colour slot:
+clearing a visible pixel because its priority bit is clear destroys the map.
+
+## 4bpp planar cells, BATs, and cache timing
+
+The HuC6270 4bpp cell is planar, not KING-style nibble-packed. One 8x8 cell is
+16 16-bit VRAM words: the first eight words are plane-01 rows, the next eight are
+plane-23 rows. For a word, the low byte is plane 0/2 and the high byte is plane
+1/3; bit 7 is the leftmost pixel. The emulator's `VDC_FixTileCache()` is the
+decoding reference:
+
+```c
+bitplane01 = VRAM[y + charname * 16];
+bitplane23 = VRAM[y + 8 + charname * 16];
+raw_pixel = ((bitplane01 >> x) & 1)
+          | (((bitplane01 >> (x + 8)) & 1) << 1)
+          | (((bitplane23 >> x) & 1) << 2)
+          | (((bitplane23 >> (x + 8)) & 1) << 3);
+```
+
+`VDC_CHRREF(palette, word_address)` stores `word_address >> 4` in the BAT; it does
+not store a raw word address. BAT addresses are row-major: for a 64-cell-wide
+map, cell `(x,y)` is VRAM word `y * 64 + x`. A 16x16 metatile made from four
+8x8 cells therefore uses four consecutive BAT tile numbers, while its pattern
+storage uses four consecutive 16-word cells. Keep sprite pattern bases 64-word
+aligned.
+
+When a background is written while CR bit `0x80` is clear and enabled later,
+rebuild the emulator's decoded tile cache on the clear-to-set transition. The
+local `pcfxemu` source applies this in both 8-bit and 16-bit VDC write paths.
+A VRAM byte comparison alone is insufficient: verify the decoded cache or the
+actual displayed pixels as well.
+
+For a 256x128 atlas of 16x16 metatiles, the compact source position is:
+
+```text
+atlas_position = (ref >> 4) * 4096 + (ref & 15) * 256
+               + local_y * 16 + local_x
+```
+
+For a 32x12 map of 16x16 semantic cells, each cell becomes a 2x2 block of
+8x8 BAT entries. The result is **64x24 BAT cells**; there is no second
+horizontal duplication. For semantic `(column,row)` in a 64-wide BAT:
+
+```c
+for (unsigned row = 0; row < 12u; ++row) { /* semantic rows, not 24 BAT rows */
+    unsigned top = (row * 2u) * 64u + column * 2u;
+    vdc_set_vram_write(chip, top);
+    vdc_vram_write(chip, bat[top]);
+    vdc_vram_write(chip, bat[top + 1u]);
+    vdc_set_vram_write(chip, top + 64u);
+    vdc_vram_write(chip, bat[top + 64u]);
+    vdc_vram_write(chip, bat[top + 65u]);
+}
+```
+
+The 2026-09-24 Dirty Pair port wrote the bottom pair at `row*64 +
+column*2 + 32` instead of `(row*2+1)*64 + column*2`. That overwrote
+neighbouring cells and crossed BAT rows, producing horizontal bands even
+though **all 7,808 pattern words and the VCE palette matched the source**.
+Changing only the second write address while retaining a 24-iteration loop
+reads past the 64x24 shadow. The loop visits **12 semantic rows** and writes
+two BAT rows per iteration.
+Compare the entire live BAT against its RAM shadow (1,536 words here), then
+decode the displayed 256x192 pixels against the source atlas. The corrected
+capture matched all 49,152 source palette slots. A correct pattern check
+alone cannot certify the displayed map.
+
+A final emulator screenshot and a serialized VDC/RAM state can be one frame
+apart around a map update. For acceptance, capture a stable state, resolve
+symbols from the current ELF, and compare the VDC palette words, **all BAT
+entries**, and decoded pattern pixels to the same logical map.
+
 ## 6. Layering the two chips
 
 **Tetsu mixes VDC1 over VDC0 on transparency, and that is the whole ordering between

@@ -68,8 +68,14 @@ country 1
 version 256
 ```
 
-On success `pcfx-cdlink` prints `Code+data Size:` and `Stack+heap Free Space:`. That free
-space is your remaining RAM out of 2 MB — watch it, code and heap share the same 2 MB.
+`pcfx-cdlink` prints `Code+data Size:` and `Stack+heap Free Space:`, but this
+**does not account for `.bss`**. The Dirty Pair port still printed 935,936 free
+bytes when `__end` reached `0x21c4a0`, 115,872 bytes past the PC-FX's 2 MB RAM.
+It linked and made a disc but remained black through 6,500 emulator fields.
+Read `__end` from the final linker map and reserve space below `0x200000` for
+the stack and heap. The port's `tools/check_ram_layout.py` rejects builds with
+less than 64 KiB above `__end`; its current measured end is `0x1e2490`, leaving
+121,712 bytes. A successful link or `pcfx-cdlink` line alone is no boot proof.
 
 ## 3. The mandatory KING BG0 init sequence
 
@@ -139,7 +145,7 @@ mode; drop the phantom "A16 hole"`). The emulator is more forgiving than silicon
 | Black screen forever | Missing affine coefficients, missing microprogram, or `bg0_disp=0` in `tetsu_set_video_mode`. |
 | Garbage / noise on screen | Microprogram not written or not enabled; or BAT/CG address points at unwritten KRAM. |
 | Right colours, wrong hues | Palette guessed by hand. Use `pcfx-yuv-palette`'s converter. |
-| Boots then hangs | Often a big `static`/`.bss` array placed across the `__gp` window, corrupting libc. Put big buffers on the heap. |
+| Boots then hangs | Check final map `__end` against `0x200000` first; a large `.bss` can silently consume the stack. Then check the `__gp` window and any large small-data objects. Moving buffers to the heap does not fix an exhausted 2 MB RAM budget. |
 | `pcfx-cdlink` errors / disc won't load | `cdlink.txt` `binary` path wrong, or `bincat` not re-run after rebuilding `.bin`. |
 | Link error `undefined reference to main` | `crt0.o` missing or not first in the link line. |
 

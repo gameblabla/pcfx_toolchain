@@ -47,7 +47,12 @@ def rgb_to_yuv(r, g, b):
             # Best Y for this chroma, then score with a green-weighted metric
             # (the eye is most sensitive to green error).
             ysum = (r - ro) + (g - go) + (b - bo)
-            for y in range(max(1, ysum // 3 - 2), min(256, ysum // 3 + 3)):
+            # Y=0 with neutral chroma is exactly representable black
+            # (0x0088 -> (0,0,0)), so the search must reach it. Flooring at 1
+            # made every black pixel in the game encode as 0x0188 and display
+            # as (1,1,1), which is off the reference's black by enough to fail
+            # the HUD background coverage check.
+            for y in range(max(0, ysum // 3 - 2), min(256, ysum // 3 + 3)):
                 dr, dg, db = (y + ro) - r, (y + go) - g, (y + bo) - b
                 err = 2 * dr * dr + 4 * dg * dg + db * db
                 if err < best_err:

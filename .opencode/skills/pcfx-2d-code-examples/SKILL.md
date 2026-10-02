@@ -573,18 +573,11 @@ separately useful VDC background/sprite engines; combined 256-colour mode gives
 one 8bpp result but consumes both chips for each combined sprite, so it does
 not provide the same independent sprite-per-scanline capacity.
 
-## 5. KING has no hardware scrolling
+## 5. KING has hardware scrolling
 
-> **KING has no hardware scrolling.**
-> KING's BG0/BG1/BG2/BG3 bitmap/tile layers are positioned by writing base addresses or
-> offsets each frame in software; there is no BXR/BYR-style scroll
-> register like the VDC has. Hardware scrolling on PC-FX only exists on the two
-> HuC6270 VDC chips (BXR/BYR). If a design wants free hardware-scrolled 2D
-> layers, it must use the VDC(s), not KING.
+> **KING has hardware scrolling.**
 
-There is an important evidence conflict in the exact libpcfx checkout inspected
-for this skill. The requested “absence” check does **not** pass here: the header
-declares `king_set_scroll`, the assembly exports it and writes registers 0x30+
+The header declares `king_set_scroll`, the assembly exports it and writes registers 0x30+
 for BSX/BSY, and `docs/KING_REGS.md` lists REG.30 through REG.37 as BG0..BG3
 horizontal/vertical scroll fields. Do not replace that evidence with an invented
 absence claim. For this project, keep the owner rule above as the design

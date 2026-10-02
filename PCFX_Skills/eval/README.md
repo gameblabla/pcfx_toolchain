@@ -69,6 +69,30 @@ Two failure patterns found so far, both of which changed how the modules are wri
 
 Both fixes generalize, and both were worth more than the specific case that found them.
 
+### VDC atlas regression prompt
+
+For a VDC world that shows repeating bands or a plausible but wrong palette,
+the regression answer must establish all of these before changing constants:
+
+- the 8x8 4bpp cell is eight plane-01 words followed by eight plane-23 words;
+- `VDC_CHRREF()` stores a word address shifted right by four;
+- a 64-cell BAT is row-major and each 16x16 semantic cell occupies a 2x2
+  block of 8x8 BAT entries;
+- the serialized VCE word is `Y8U4V4`, not RGB332/RGB555;
+- native `bg_palette_index[]` values are source slots and must be converted
+  through the native RGB palette and the active fade table;
+- the screenshot, VDC state, and RAM dump are compared at a stable logical
+  frame, not assumed to be simultaneous.
+
+A passing local check records the current ELF symbols, compares all used VDC
+pattern words and palette entries, checks the entire live BAT against its
+RAM shadow, and verifies that an inactive second-player sprite is not emitted
+at `(0,0)`. The 2026-09-24 Dirty Pair port initially passed the pattern and
+palette checks while the screen still showed bands: the BAT flush wrote the
+lower pair 32 columns rightward instead of one row down. The corrected state
+matched all 1,536 BAT words and all 49,152 source palette slots. The case in
+`cases/vdc-bat-row-address/` tests whether the local model catches this.
+
 ### Character animation archive case
 
 Prompt a candidate agent to add a new compatible COLLADA animation to a PC-FX character

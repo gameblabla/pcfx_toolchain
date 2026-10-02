@@ -60,6 +60,33 @@ own commit history — this took many iterations against real hardware:
 
 Use the library's API rather than issuing SCSI commands yourself.
 
+### In-game track changes must not wait out the seek
+
+Emulator-verified on Dirty Pair, 2026-09-30: pumping a music manager once per
+frame is insufficient if its transport is synchronous. libpcfx's
+`eris_scsi_command()` waits for the next REQ after the final CDB byte; a D8 seek
+can hold that wait for many video fields. In the same 100-field window, the
+synchronous build completed 84 game updates and had not finished switching;
+the cooperative port completed 100, accepted track 10 and its D9 bound, and
+captured audible PCM. Returning to the stage track also completed 100/100.
+
+For this resident game's nonblocking adaptation, see
+`dirty_pair_pcfx/pcfx-port/src/dp_pcfx_cdda.c` and
+`dirty_pair_pcfx/pcfx-port/tests/cdda_cooperative.c`. It retains the SDK's BCD
+D8/D9/DA protocol and timer guards, drains status/message across frames, and
+caps each pump at 64 polls. Requests do not imply accepted playback. Drain an
+outstanding command before applying a replacement request, and remember what
+an accepted superseded command did to the physical drive. Retry refused D9
+alone, without re-seeking with D8.
+
+This frame-spanning transport is **not silicon-verified**, and is currently
+specific to a resident port with no runtime CD reads. A streaming game must
+serialize its data loader with the asynchronous bus owner. Preserve the SDK's
+hardware-tested audio command sequence; do not fix a gameplay freeze by
+shortening the seek timeout, discarding an unconsumed status, or moving the
+blocking call later in the same frame. Full results and limits:
+`dirty_pair_pcfx/research/pcfx-menu-audio-20260930/README.md`.
+
 ## 3. Audio and the rest of the machine
 
 - **Pause the interval timer across every CD operation.** libpcfx shipped
