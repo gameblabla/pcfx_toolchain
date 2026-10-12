@@ -191,4 +191,4 @@ source cases, and observed patterns are recorded in `tests/README.md`.
 `pcfx-v810-performance` (cycle/memory model and measured catalogue) ·
 `pcfx-v810-profiling` (measure hot functions) · `pcfx-fixed-point` (replace float) ·
 `pcfx-freestanding-runtime` (audit helpers) · the NEC V810 manual at
-`RE1PCFX/3DPCFX/docs/v810-cpu-doc.pdf` (instruction semantics and documented timing).
+`DOCUMENTATION/CPU/v810-cpu-doc.pdf` (instruction semantics and documented timing).
