@@ -52,7 +52,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | **Put a PNG/still picture onscreen**, or choose among 8bpp, 16-color, 64K/high-color, and 16M modes | **pcfx-2d-picture** first; it routes to KING BG0, VDC, RAINBOW, or the direct-YUV path and explains palette/index handling. |
 | Software-3D renderer black/blank; transform or page-flip bugs | **pcfx-3d-pipeline §1 first** — it names both causes — then pcfx-king-framebuffer, pcfx-emulator-testing |
 | "Every piece works in isolation but the renderer draws nothing" | **pcfx-3d-pipeline §1b** (the MUL high word), then §1a (the CG-base units) |
-| Horizontal pixel pairs swapped | **pcfx-king-framebuffer** (two pixels per word) |
+| Horizontal pixel pairs swapped or single-pixel span edges wrong | **pcfx-king-framebuffer §2** for the byte-lane contract, then **pcfx-3d-rasterizer §1** for the span writer |
 | Tiles, sprites, scrolling, sprite order | **pcfx-vdc-tiles-sprites** |
 | RAINBOW background/sky/FMV, scrolling RAINBOW layer, RAINBOW stream looks wrong (right-side glitch, washed out, too large), black RAINBOW player | **pcfx-rainbow** (start from its §0 templates) |
 | Colours wrong, muddy, grey; matching a PC version's palette or baking art | **pcfx-yuv-palette** plus **pcfx-2d-picture** for indexed-image mapping; use **pcfx-color-verification** to check the output numerically. |

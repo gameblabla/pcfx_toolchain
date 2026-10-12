@@ -25,9 +25,13 @@ for (i = 0; i < count; i++)
 
 Consequences that shape every loop here:
 
-- **One word holds two horizontal pixels** (`lo | hi << 8`) in 8bpp. A "256-pixel
-  wide" framebuffer is 128 words. Getting this backwards swaps pixel pairs — the
-  classic symptom in [pcfx-king-framebuffer].
+- **KING BG0 8bpp stores the left/even-x pixel in bits 15..8 and the right/odd-x
+  pixel in bits 7..0.** Pack a pair as `(left << 8) | right`. A 256-pixel row is 128
+  words. This is the numeric word KING consumes; do not infer pixel lanes from V810
+  or host RAM byte order. A little-endian halfword load from a byte stream `[left,
+  right]` reverses the numeric pair unless it is swapped. At a span edge, write an
+  even-x pixel to the high byte and an odd-x pixel to the low byte. See
+  [pcfx-king-framebuffer] §2.
 - **Setting the cursor costs a port write**, so amortize it: set once per span, never
   per pixel. Horizontal spans are cheap; vertical columns need a stride and are why
   column drawers differ from span drawers.

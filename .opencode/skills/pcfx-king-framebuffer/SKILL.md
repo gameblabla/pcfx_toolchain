@@ -133,6 +133,21 @@ was found.
 
 Writing a solid pair is therefore `(colour << 8) | colour`.
 
+**Keep KING pixel lanes separate from CPU byte order.** The V810 is little-endian, but
+KING still interprets the numeric halfword with the left/even-x pixel in the high byte
+and the right/odd-x pixel in the low byte. If `pixels[]` is a byte-per-pixel RAM buffer
+with `pixels[even_x] = left` and `pixels[even_x + 1] = right`, composing the KRAM word
+must be `((u16)left << 8) | right`; blindly reading those two RAM bytes as a `u16`
+produces the opposite numeric value on the V810. If the renderer stores an already
+packed `u16`, keep that KING word value unchanged when writing it with `st.h`/`out.h`.
+For a one-pixel span, even x updates `word[15:8]` and odd x updates `word[7:0]`.
+
+Use this two-colour check whenever changing a span writer or upload path: choose clearly
+different palette indices `left = 0x12`, `right = 0x34`; the expected KRAM word is
+`0x1234`, and the capture must show index `0x12` on the left and `0x34` on the right.
+Then test a span containing only x=1 (update the low byte) and only x=2 (update the high
+byte) to catch incorrect leading and trailing pixel handling.
+
 ## 3. Required setup
 
 See [pcfx-bringup] §3 for the full mandatory sequence. The parts specific to the bitmap:
