@@ -1,6 +1,6 @@
 # PC-FX skill bundle — index and router
 
-Thirty knowledge modules for PC-FX homebrew. Each is a directory with a
+Thirty-two knowledge modules for PC-FX homebrew. Each is a directory with a
 `SKILL.md`; some ship runnable tools next to it.
 
 **How to use this file: find your symptom or task in §1, open only the modules it
@@ -76,6 +76,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | The answer is not derivable — placement, unroll, thresholds | **pcfx-self-improve** §4, **pcfx-optimize-loop** |
 | Shared skeleton, compatible COLLADA clips, runtime animation/movement, compressed clip archive | **pcfx-character-animation**, plus pcfx-character-8bpp and pcfx-cd-assets |
 | A per-pixel inner loop, span/column drawer, texture mapper | **pcfx-3d-rasterizer**, with **pcfx-v810-performance** |
+| Writing or optimizing ordinary C for V810 GCC; signedness, integer promotions, and generated code | **pcfx-v810-c**, then **pcfx-v810-profiling** and **pcfx-v810-performance** for measured performance work |
 | A `float` appears anywhere | **pcfx-fixed-point** |
 | Hidden libc/libgcc calls, software divide helpers, timer/IRQ overhead | **pcfx-freestanding-runtime** |
 
@@ -137,6 +138,7 @@ unverified inferences explicitly instead of silently choosing a lower-priority s
 | `pcfx-regression-triage` | worked-before/broken-now procedure: baseline, fresh emulator, hot-PC spin finding, map-based state, gated fix | |
 | `pcfx-emulator-testing` | pcfx-headless, boot delay, input files, what it can't prove | |
 | `pcfx-v810-performance` | instruction costs, icache, DRAM page, measured catalogue | |
+| `pcfx-v810-c` | GCC 4.9.4 C code generation, integer promotions and signedness, common code shapes, helpers, and a reproducible probe | `tests/` |
 | `pcfx-v810-cpu-model` | emulator cycle-model implementation, stalls, validation boundaries | |
 | `pcfx-v810-profiling` | the profiler: CPI, icache, DRAM, flag stalls, hot PCs | |
 | `pcfx-optimize-loop` | build knobs, automated search, noise floor, recording results | `search.py` |

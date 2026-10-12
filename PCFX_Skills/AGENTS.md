@@ -188,7 +188,9 @@ The three levers that actually move the needle, in order:
 
 Full cycle model, the measured do-and-don't catalogue, and the **±3% layout noise floor**
 (any edit anywhere moves fps by up to ±3%, so a predicted win under ~1 ms/frame is
-unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work.
+unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work. For
+C-only code-shape and type questions, also read **[pcfx-v810-c]**; inspect the compiler's
+output rather than extrapolating from assembly or host-CPU folklore.
 
 ## 6. How to work
 
@@ -229,6 +231,7 @@ unmeasurable) are in **[pcfx-v810-performance]**. Read it *before* any perf work
 | **pcfx-freestanding-runtime** | A renderer must avoid newlib/libgcc, float, int64, software helpers, timer IRQs, and registered handlers; audit source, map, and ELF. |
 | **pcfx-fixed-point** | Any math. There is no FPU — a `float` is a disaster, not a slowdown. |
 | **pcfx-v810-performance** | **Before** any optimization work. Cycle costs + measured failures. |
+| **pcfx-v810-c** | Ordinary C compiled by V810 GCC 4.9.4: integer promotions, signed/unsigned codegen, helper calls, and common C patterns. This does not cover inline V810 assembly or `.S` files. |
 | **pcfx-v810-cpu-model** | When modifying or auditing the emulator profiler/cycle model itself. |
 | **pcfx-v810-profiling** | Getting the numbers: `pcfx-headless-prof`, icache, DRAM pages, flag stalls. |
 | **pcfx-optimize-loop** | Build knobs and automated search; the noise floor; recording results. |
