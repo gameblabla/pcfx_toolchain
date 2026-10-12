@@ -71,7 +71,7 @@ before changing a CD path, and `vendor/pcfxemu/docs/king-dma-erratum.md` /
 corrupt graphics and cost unpredictable frame time.
 
 The pattern that worked: **load at defined points** (level start, screen transitions) and
-**keep the CD idle during gameplay** (descent-pcfx shipped exactly that commit). If you
+**keep the CD idle during gameplay**. If you
 must stream, route CD-DMA to a KRAM page your renderer is not using ([pcfx-kram-layout]),
 and gate the transfer to vertical blanking.
 
@@ -93,13 +93,13 @@ Watch that number. Techniques used here when it got tight:
   points are dropped (libpcfx builds this way).
 - **No float, no 64-bit math** — each drags ~1 KB of libgcc helpers in
   ([pcfx-v810-performance]).
-- **Overlays**: emeraldpcfx could not fit Pokémon Emerald resident, so it partitioned into
-  a resident core plus explicitly paged overlay arenas, routing cross-overlay calls
-  through veneers. That is a large architectural commitment — only go there if you must.
+- **Overlays**: when the resident program cannot fit in RAM, partition it into a resident
+  core plus explicitly paged overlay arenas, routing cross-overlay calls through
+  veneers. This is a large architectural commitment; use it only when simpler asset
+  streaming and code-size reductions are insufficient.
 - **Keep assets on the disc and page them in** rather than baking everything into the image.
-- descent-pcfx added a **build-time memory budget report and gate**
-  (`tools: report and gate the PC-FX memory budget`) so an overrun fails the build instead
-  of failing to boot. Worth copying.
+- Add a **build-time memory budget report and gate** so an overrun fails the build instead
+  of failing to boot. See [pcfx-freestanding-runtime] for the final map and ELF audit.
 
 ## 5. Asset pipelines
 
@@ -162,5 +162,4 @@ For the complete shared-rig animation pipeline, read `pcfx-character-animation`.
 ## Related
 
 [pcfx-bringup] for the disc build · [pcfx-kram-layout] · [pcfx-audio] ·
-[pcfx-emulator-testing] · [pcfx-character-animation]. Reference:
-`descent-pcfx/docs/CD_TO_KRAM_ASSETS.md`, `descent-pcfx/docs/MEMORY_BUDGET.md`.
+[pcfx-emulator-testing] · [pcfx-character-animation] · [pcfx-freestanding-runtime].

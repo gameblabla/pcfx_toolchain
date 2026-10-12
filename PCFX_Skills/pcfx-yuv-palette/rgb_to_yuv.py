@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """RGB888 -> PC-FX HuC6261 Y8U4V4 palette word, and back.
 
-This is the converter used by doom-pcfx / wolf-pcfx. Keep it bit-exact if you
+This converter is bundled with the PC-FX skills. Keep it bit-exact if you
 regenerate baked palettes, or colours will drift between tools and runtime.
 
     python3 rgb_to_yuv.py 255 0 0        -> one colour

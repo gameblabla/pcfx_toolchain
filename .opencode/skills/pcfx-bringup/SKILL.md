@@ -69,7 +69,7 @@ version 256
 ```
 
 `pcfx-cdlink` prints `Code+data Size:` and `Stack+heap Free Space:`, but this
-**does not account for `.bss`**. The Dirty Pair port still printed 935,936 free
+**does not account for `.bss`**. A measured game port printed 935,936 free
 bytes when `__end` reached `0x21c4a0`, 115,872 bytes past the PC-FX's 2 MB RAM.
 It linked and made a disc but remained black through 6,500 emulator fields.
 Read `__end` from the final linker map and reserve space below `0x200000` for

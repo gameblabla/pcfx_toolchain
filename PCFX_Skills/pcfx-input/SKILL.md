@@ -89,8 +89,8 @@ u32 pressed = now & ~prev;      /* rising edge this frame */
 prev = now;
 ```
 
-wolf-pcfx shipped `Wait for button release before exiting options menu` as a bug fix —
-this is exactly that class of bug. Also beware the **first frame**: `prev` starts at 0, so
+An options menu can exit immediately if it checks a held level instead of waiting for a
+release edge. Also beware the **first frame**: `prev` starts at 0, so
 anything held at boot reads as a press. doom-pcfx suppresses input for the first few tics
 for this reason.
 

@@ -32,9 +32,10 @@ They come from `vendor/libpcfx/examples/example.mk`. Inspect the flags in the ac
 build rather than assuming they match. For a first code-generation look:
 
 ```sh
+mkdir -p build
 toolchain/v810-gcc/bin/v810-gcc \
     -O2 -Wall -std=gnu99 -mv810 -msda=256 -mno-prolog-function \
-    -S source.c -o /tmp/source.v810.s
+    -S source.c -o build/source.v810.s
 ```
 
 Inspect a linked binary as well when helpers, call overhead, or final placement matter:
@@ -177,13 +178,13 @@ Run the C corpus shipped with this module:
 
 ```sh
 PCFX_V810_GCC="$PWD/toolchain/v810-gcc" \
-    PCFX_PROBE_OUT=/tmp/pcfx-v810-c-probe.s \
     PCFX_Skills/pcfx-v810-c/tests/run_codegen_probe.sh
 ```
 
 The script compiles `tests/codegen_probe.c` with the standard SDK C flags and checks
 stable instruction-level expectations. The exact register allocation is not part of the
-contract. Review `/tmp/pcfx-v810-c-probe.s` for complete output. The tested GCC version,
+contract. Review `build/pcfx-v810-c-probe.s` for the generated output and compare it with
+the checked-in `tests/reference-output-gcc-4.9.4.s` snapshot. The tested GCC version,
 source cases, and observed patterns are recorded in `tests/README.md`.
 
 ## Related
@@ -191,4 +192,4 @@ source cases, and observed patterns are recorded in `tests/README.md`.
 `pcfx-v810-performance` (cycle/memory model and measured catalogue) ·
 `pcfx-v810-profiling` (measure hot functions) · `pcfx-fixed-point` (replace float) ·
 `pcfx-freestanding-runtime` (audit helpers) · the NEC V810 manual at
-`RE1PCFX/3DPCFX/docs/v810-cpu-doc.pdf` (instruction semantics and documented timing).
+`DOCUMENTATION/CPU/v810-cpu-doc.pdf` (instruction semantics and documented timing).

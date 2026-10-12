@@ -8,9 +8,12 @@ Run from the toolkit root:
 
 ```sh
 PCFX_V810_GCC="$PWD/toolchain/v810-gcc" \
-PCFX_PROBE_OUT=/tmp/pcfx-v810-c-probe.s \
     PCFX_Skills/pcfx-v810-c/tests/run_codegen_probe.sh
 ```
+
+The generated assembly is written to `build/pcfx-v810-c-probe.s`. The captured
+GCC 4.9.4 output in `reference-output-gcc-4.9.4.s` is a review aid; the runner checks
+stable instruction patterns rather than requiring byte-for-byte output.
 
 The source covers signed/unsigned byte and halfword reads, narrow argument promotion,
 signed/unsigned comparisons, low-word multiplies, variable division and remainder,

@@ -62,12 +62,10 @@ the window, and you only rewrite the column or row entering the screen.
 
 For a platformer: pick a map wider than the screen (e.g. 64×32), write the visible region
 plus a margin, update the scroll register each frame, and rewrite only the newly exposed
-column. Do **not** rebuild the whole BAT every frame — emeraldpcfx explicitly stopped
-doing that (`Stop rebuilding the attribute table on frames nothing wrote to it`).
+column. Do **not** rebuild the whole BAT every frame; skip it when no map cells changed.
 
-Write scroll registers **during blanking, before the attribute tables** — emeraldpcfx
-shipped that ordering as a fix (`Write the scroll registers in blanking, before the
-attribute tables`). See [pcfx-frame-timing].
+Write scroll registers **during blanking, before the attribute tables**. See
+[pcfx-frame-timing].
 
 ## 4. Sprites
 
@@ -89,7 +87,7 @@ every frame, or set up SATB DMA once so it reloads automatically (see the `022`/
 examples). doom-pcfx hit visible tearing from doing the SATB upload at the wrong moment —
 do it in blanking.
 
-Two pattern-address traps, both of which produced real, confusing bugs in emeraldpcfx:
+Two pattern-address traps have produced real, confusing display bugs:
 
 - A sprite's pattern field addresses VRAM in **32-word units and the chip discards the
   bottom bit** — a cell at an odd multiple of 32 words is read 32 words below where you
@@ -101,22 +99,21 @@ Two pattern-address traps, both of which produced real, confusing bugs in emeral
 
 VDC tiles and sprites use **16-colour sub-palettes**. A tile or sprite names a palette
 *group*, and **every pixel in that cell must fall inside that group's 16 entries**. A cell
-whose pixels span two groups cannot be drawn as-is — emeraldpcfx leaves such cells
-undrawn. Plan art around 16-colour groups from the start.
+whose pixels span two groups cannot be drawn as-is. Remap or split those cells, or leave
+them undrawn. Plan art around 16-colour groups from the start.
 
 Group bases are set with `tetsu_set_vdc_palette(vdcbg, vdcspr)`. See [pcfx-yuv-palette]
 for the colour format and the layer palette layout.
 
 **Pixel value zero is transparent even if palette entry zero contains a visible
 colour.** An imported atlas may use source palette slot zero as an opaque colour;
-writing that slot as VDC pixel zero makes holes. Dirty Pair's Stage 1 atlas uses
-all 16 source slots, but no 8x8 tile contains both slots zero and one. Its
-VDC path uses two BAT palette groups: tiles containing slot zero encode it as
-pixel one and use a group whose entry one has slot zero's colour; the other
-tiles use the ordinary group whose entry one has slot one's colour. Check this
-per-tile disjointness before using that mapping on a changed atlas. Keep the
-NES background-priority/opacity mask separate from the source colour slot:
-clearing a visible pixel because its priority bit is clear destroys the map.
+writing that slot as VDC pixel zero makes holes. When an atlas uses all 16 source slots,
+check whether any 8x8 tile contains both slots zero and one. If not, tiles containing slot
+zero can encode it as pixel one and use a palette group whose entry one has slot zero's
+colour; other tiles can use the ordinary group whose entry one has slot one's colour.
+Check this per-tile disjointness whenever the atlas changes. Keep any background-priority
+or opacity mask separate from the source colour slot: clearing a visible pixel because
+its priority bit is clear destroys the map.
 
 ## 4bpp planar cells, BATs, and cache timing
 
@@ -171,7 +168,7 @@ for (unsigned row = 0; row < 12u; ++row) { /* semantic rows, not 24 BAT rows */
 }
 ```
 
-The 2026-09-24 Dirty Pair port wrote the bottom pair at `row*64 +
+The 2026-09-24 map port wrote the bottom pair at `row*64 +
 column*2 + 32` instead of `(row*2+1)*64 + column*2`. That overwrote
 neighbouring cells and crossed BAT rows, producing horizontal bands even
 though **all 7,808 pattern words and the VCE palette matched the source**.
@@ -202,9 +199,9 @@ That gives four depth slots for an object:
 3. behind the back chip's background (back chip sprite, priority bit)
 4. behind that (back chip sprite)
 
-emeraldpcfx put every object on the back chip first and got opaque background pixels
-punching holes through its foreground text — the fix was giving **both** chips sprites.
-If your sprites are mysteriously behind a background, this is why.
+Putting every object on the back chip can let opaque background pixels punch holes
+through foreground text. Give **both** chips sprites when the scene needs the additional
+depth slots. If sprites are mysteriously behind a background, inspect the chip assignment.
 
 KING backgrounds are mixed in by Tetsu priorities too, so you can put a KING BG0 bitmap
 (or a rotating/scaling plane) behind or in front of the VDC layers —
@@ -212,16 +209,17 @@ KING backgrounds are mixed in by Tetsu priorities too, so you can put a KING BG0
 
 **A rotating/scaling background has no VDC equivalent** — use KING BG0, which has the
 right shape (one tile index per cell, 8bpp tiles, colour 0 transparent) and affine
-registers. That is how emeraldpcfx does the GBA's mode-7-style plane.
+registers. This is also the suitable path for a mode-7-style plane.
 
 ## 7. Sprite limits
 
 The VDC has per-scanline sprite and pixel limits (as on the PC Engine). Exceeding them
 drops sprites on that line. With two chips you have two budgets; splitting a busy scene
-across both chips is a legitimate technique — emeraldpcfx falls back to "draw it on the
-other chip" rather than dropping a sprite, accepting the wrong order over a missing object.
+across both chips is a legitimate technique when preserving the object matters more than
+perfect order. Check that the second chip's background will not obscure it.
 
 ## Related
 
 [pcfx-yuv-palette] · [pcfx-frame-timing] · [pcfx-input] · [pcfx-king-framebuffer].
-Best worked example in this workspace: `emeraldpcfx/README.md` §Graphics.
+For runnable VDC starting points, inspect `vendor/libpcfx/examples/` and the examples
+linked from this module.

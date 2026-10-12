@@ -33,8 +33,8 @@ original Japanese C6261 manual for any disputed register or timing detail.
 3. At the *leading edge* of each blanking interval, write the changed palette
    entries and switch the displayed page if required. The canonical double-read
    raster wait in `pcfx-frame-timing` returns at that edge in 262-line mode.
-   A 256-entry upload has fit in blanking in the measured wolf-pcfx setup; still
-   measure your combined palette/page/VDC work.
+   A 256-entry upload has fit in blanking in a measured setup; still measure your
+   combined palette/page/VDC work.
    A game-core `FadeComposite()` called after a full render is **not** a safe
    place to call `tetsu_set_palette()`, even if the loop began with a frame
    wait. Store the requested fade step there. After rendering, wait for the

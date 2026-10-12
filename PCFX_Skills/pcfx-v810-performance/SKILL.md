@@ -6,8 +6,8 @@ description: Optimizing V810 code on PC-FX - instruction cycle costs, the 1 KB d
 # V810 performance
 
 Read this **before** optimizing anything. It contains measured results — including
-failures — from doom-pcfx, wolf-pcfx, AirGT and descent-pcfx. Re-running a known
-failure is the most common waste of effort here.
+failures — from raycaster, textured-scene, character, and Doom workloads. Re-running a
+known failure is the most common waste of effort here.
 
 **Caveat: the cycle numbers are the emulator's model.** They match the V810 manual where
 it exists, but silicon is untested. Optimizations that *remove instructions or memory
@@ -76,8 +76,9 @@ four clustered `ld.h` — giving **2 page changes per 4 pixels instead of 8**. M
 doom-pcfx planes 20.1 → 16.5 ms/frame, whole frame 65.2 → 61.4 ms, byte-identical output.
 **GCC will not do this for you.**
 
-descent-pcfx measured DRAM page penalties at **24.96% of all field cycles** — larger than
-its icache miss cost. If you are slow and don't know why, check this first.
+A detailed software-3D profile measured DRAM page penalties at **24.96% of all field
+cycles** — larger than its icache miss cost. If you are slow and don't know why, check
+this first.
 
 Corollary: an icache miss inside a pixel loop costs more than its +2 refill, because the
 refill also steals the open data page.
@@ -89,7 +90,8 @@ refill also steals the open data page.
 - **No 64-bit, no float.** GCC 4.9.4 does *not* emit the widening `mul` for `(int64)a*b` —
   it calls `__muldi3`. Write `FixedMul` as inline asm using `mul` + `r30` (**clobber r30**),
   and `FixedDiv` on two hardware `divu`. Each 64-bit or float helper drags ~1 KB of libgcc
-  into your 2 MB image. descent-pcfx's whole int32 conversion exists for this reason.
+  into your 2 MB image. A complete renderer conversion to 32-bit arithmetic was made for
+  this reason.
 - **Globals cost `movhi`+`ld`**, and the load pays the +2 penalty. GCC hoists them into
   registers until register pressure runs out.
 - **Big `static`/`.bss` arrays are dangerous** — the linker can place them across the
@@ -126,8 +128,8 @@ refill also steals the open data page.
 | Pre-converting all palettes out of the frame loop | killed ~8 ms/frame + 114–156 ms freezes |
 | Icache placement of hot loops at tuned offsets | +4% |
 | Timer-IRQ ms clock instead of polled vblank | fixed slow-motion under load |
-| wolf-pcfx: split wall casting, single ray-cast state block | 37.6 → 60 fps |
-| AirGT: quad-pixel sampler batching stores | 8.6 → 10.1 fps |
+| Raycaster: split wall casting, single ray-cast state block | 37.6 → 60 fps |
+| Textured 3D scene: quad-pixel sampler batching stores | 8.6 → 10.1 fps |
 | Character: exact 128-pose native output stream | 3.017 → **30.117 FPS**; DRAM 46,447 → 23,996 cyc/field; i-cache 4,502 → 132 misses/field |
 
 ### Failed — do not retry without new information

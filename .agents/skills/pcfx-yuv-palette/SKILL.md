@@ -91,9 +91,9 @@ Two rules that came out of doom-pcfx's colour work:
   index 0 / Y 0 as transparent.
 
 If you bake palettes at build time, the Python and the C **must be bit-identical**, or
-colours drift between your asset tool and runtime. wolf-pcfx keeps only the YUV table and
-*reconstructs* RGB from it when the engine needs `.r/.g/.b`, rather than keeping two
-tables that can disagree — do that.
+colours drift between your asset tool and runtime. Keep only the YUV table and
+*reconstruct* RGB from it when the engine needs `.r/.g/.b`, rather than keeping two
+tables that can disagree.
 
 When matching a PC version that already has a small game palette, map those source
 colors directly through this converter. Do not first quantize them to RGB332 and then
@@ -115,9 +115,9 @@ tetsu_set_rainbow_palette(rainbow);          /* base entry for RAINBOW   */
 
 A KING BG0 8bpp bitmap uses a 256-index window at base 0 (entries 0..255). Since pixel
 index 0 is transparent, an opaque picture has 255 usable indices in that window. If you
-also need VDC sprites or palette-mode RAINBOW, they can live in another sub-range —
-descent-pcfx puts RAINBOW at base 256 and leaves 0..255 to BG0; emeraldpcfx puts VDC
-object palettes at 256+ in groups of 16.
+also need VDC sprites or palette-mode RAINBOW, assign them another sub-range. For
+example, a RAINBOW base of 256 leaves 0..255 to BG0, while VDC object palettes can use
+256+ in groups of 16.
 
 The HuC6261 offset registers store the base in two-entry units.
 `tetsu_set_king_palette()`, `tetsu_set_vdc_palette()`, and
@@ -128,9 +128,9 @@ See `vendor/libpcfx/src/tetsu.S` and the formula in
 not use a palette base. Plan this before you bake art.
 
 VDC layers use 16-colour sub-palettes: a tile/sprite names a **palette group**, and all
-its pixels must fall in that group's 16 entries. emeraldpcfx draws 8bpp GBA objects on the
-VDC only when every pixel in a cell falls inside one 16-entry group; cells that straddle
-two groups have nowhere to go.
+its pixels must fall in that group's 16 entries. Convert an 8bpp object to VDC only when
+every pixel in a cell falls inside one 16-entry group; cells that straddle two groups
+must be split, remapped, or left out.
 
 ## Index 0 is transparent
 
@@ -140,11 +140,10 @@ bit doom-pcfx's WAD assets.
 
 ## When it is safe to write the palette
 
-**Never write palette RAM during active display. Write palette entries during vertical blanking.** A 256-entry update during active
-display caused visible glitches in wolf-pcfx (`video: keep VCE palette and KING mode
-writes out of active display`) and doom-pcfx (`video: flush VCE palette during blanking`).
-Those projects updated a 256-entry window; the HuC6261 palette RAM itself has 512
-entries. See [pcfx-frame-timing].
+**Never write palette RAM during active display. Write palette entries during vertical
+blanking.** A 256-entry update during active display caused visible glitches in a
+measured raycaster and in the bundled Doom port. The updates affected a 256-entry window;
+the HuC6261 palette RAM itself has 512 entries. See [pcfx-frame-timing].
 
 Converting a whole palette at runtime is expensive: doom-pcfx measured ~8 ms/frame plus
 114–156 ms freezes from doing RGB→YUV searches during gameplay. **Pre-convert every

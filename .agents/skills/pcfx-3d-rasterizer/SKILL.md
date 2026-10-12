@@ -32,6 +32,11 @@ Consequences that shape every loop here:
   right]` reverses the numeric pair unless it is swapped. At a span edge, write an
   even-x pixel to the high byte and an odd-x pixel to the low byte. See
   [pcfx-king-framebuffer] §2.
+- This byte-lane rule is for indexed pixels. The 2bpp and 4bpp indexed modes also put
+  leftmost pixels in the more-significant fields, while 64K HiColor stores one
+  Y8U4V4 `u16` per pixel; byte arrays for the V810 serialize that word little-endian
+  (low byte first). Do not treat its two bytes as neighboring pixels. 16M has its own
+  YUV888 pair layout; see [pcfx-2d-picture].
 - **Setting the cursor costs a port write**, so amortize it: set once per span, never
   per pixel. Horizontal spans are cheap; vertical columns need a stride and are why
   column drawers differ from span drawers.

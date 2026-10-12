@@ -294,7 +294,7 @@ known to contain only the source background or use a native frame capture.
 When reproducing a C palette lookup in NumPy, convert every sampled channel
 with `int(channel)` before `<<`, `-`, or squared-error math. `numpy.uint8`
 arithmetic can wrap and produce false palette indices or distances without
-raising an error; a previous Dirty Pair comparison turned an exact index 100
+raising an error; a previous palette comparison turned an exact index 100
 into 226 this way.
 For Pillow's flattened `getdata()` or a baked pixel byte array, `(x, y)` is
 at `y * width + x`. Swapping it to `x * width + y` can make a correct bake
@@ -321,7 +321,9 @@ Y8U4V4 than by converting an RGB332 approximation.
 `tetsu_set_palette()` or consume a palette range:
 
 - 64K stores one Y8U4V4 word per pixel: `(Y << 8) | (U4 << 4) | V4`. Neutral chroma is
-  `U4=V4=8`. This is **not RGB565**.
+  `U4=V4=8`. This is **not RGB565**. For a V810 byte array, serialize each word
+  little-endian (low byte, then high byte); when the word is loaded as a `u16`, write
+  it unchanged to KRAM. This is CPU byte order and does not swap two adjacent pixels.
 - 16M stores 8-bit Y, U, and V components, with U/V shared by two horizontally adjacent
   pixels. Neutral chroma is U=V=`0x80`. For an even-width row, `pcfxemu`'s internal-dot
   bitmap layout stores each pair as two consecutive KRAM words: `(Y0 << 8) | Y1`, then

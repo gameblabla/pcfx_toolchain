@@ -29,9 +29,8 @@ king_set_bat_cg_addr(KING_BG0,   0, base >> 10);   /* 1024-word units!   */
 king_set_bat_cg_addr(KING_BG0SUB, 0, base >> 10);  /* sub layer too      */
 ```
 
-wolf-pcfx's `king_set_display_page` (`wolf_video.c`) does the same `base / 1024` (its
-`KRAM_CG_UNIT`) and also updates BG0SUB every flip. Pages of 30,720 words (128 words/row
-x 240 rows, 256x240 8bpp) land at word offsets 0 and 0x7800 -> CG values 0 and 0x1E.
+Update both BG0 and BG0SUB on every flip. Pages of 30,720 words (128 words/row x 240
+rows, 256x240 8bpp) land at word offsets 0 and 0x7800 -> CG values 0 and 0x1E.
 
 ### 1b. The V810 MUL high word must be read out of r30 explicitly
 
@@ -45,8 +44,7 @@ __asm__ ("mul %2, %0" : "=r"(lo), "=r"(hi) : "r"(b), "0"(a) : "r30"); // WRONG
 declares `hi` as an output register the asm never writes - GCC allocates some unrelated
 register and every product's top 16 bits are garbage. Result: all transforms produce
 off-screen coordinates, the clear wipes the page, and the renderer is **black while every
-isolated piece (clear, triangle fill, flip) demonstrably works**. The verified fix (same
-shape as wolf-pcfx `WallFixedMul`):
+isolated piece (clear, triangle fill, flip) demonstrably works**. The verified fix is:
 
 ```c
 int lo, hi;

@@ -1,6 +1,6 @@
 ---
 name: pcfx-software-3d
-description: Software 3D on PC-FX - realistic frame budgets from the measured projects here, fixed-point conventions, avoiding divides, triangle and span rasterization into KRAM, LOD and viewport strategy, and why there is no hardware 3D. Use when building or speeding up any 3D renderer, or when deciding whether a 3D design is feasible at all.
+description: Software 3D on PC-FX - realistic frame budgets from measurements recorded in this bundle, fixed-point conventions, avoiding divides, triangle and span rasterization into KRAM, LOD and viewport strategy, and why there is no hardware 3D. Use when building or speeding up any 3D renderer, or when deciding whether a 3D design is feasible at all.
 ---
 
 # Software 3D on the PC-FX
@@ -13,15 +13,15 @@ has no FPU, a 13-cycle multiply, a 36–38 cycle divide, no dcache and a 1 KB ic
 
 ## 2. Budget before you design
 
-Measured in this workspace:
+Measured workloads recorded in this bundle:
 
-| Project | Content | fps |
+| Workload | Content | fps |
 |---|---|---|
-| wolf-pcfx | raycaster, 256×240, no real 3D transform | **60** |
-| doom-pcfx | BSP, textured walls/floors, sprites | 15–20 |
-| AirGT | textured 3D ground + car model | ~10 |
-| 3DCharacterSpinning | 6,246-vertex animated textured character, 8bpp | **2.800** |
-| descent-pcfx | full 6-DOF engine, exact collision | ~2 |
+| Raycaster | 256×240, no real 3D transform | **60** |
+| BSP renderer | textured walls/floors and sprites | 15–20 |
+| Textured 3D scene | ground and vehicle model | ~10 |
+| Animated character | 6,246 vertices, textured, 8bpp | **2.800** |
+| 6-DOF engine | full movement and collision | ~2 |
 
 **Read that table before promising a frame rate.** A "simple spinning textured model"
 is a 3 fps workload here. If you need 20+ fps with real 3D, you need a
@@ -38,25 +38,25 @@ left for transform, culling or game logic. A full 256×240 screen is 61,440 pixe
 
 1. **Reduce raster pixels only when the output contract permits it.** Do not silently
    replace a requested 256×240 raster with 128×120 plus nearest-neighbour expansion.
-   `3DCharacterSpinning` keeps a native 256×240 software raster and uses a 512×256
-   KING affine source only as an 8bpp KRAM packing/presentation layout: one logical
-   pixel per duplicated halfword, sampled with A=2.0. See [pcfx-character-8bpp].
-2. **Shrink the viewport** (letterbox / cockpit surround). doom-pcfx names a smaller 3D
-   viewport as *the one proven lever* to reach 20 fps game-wide. A cockpit or HUD border
+   Keep the requested raster native. A 512×256 KING affine source can be used only as an
+   8bpp KRAM packing/presentation layout: one logical pixel per duplicated halfword,
+   sampled with A=2.0. See [pcfx-character-8bpp].
+2. **Shrink the viewport** (letterbox / cockpit surround). A smaller 3D viewport was
+   measured as an effective lever for reaching 20 fps game-wide. A cockpit or HUD border
    is both a style choice and a performance one.
-3. **LOD by distance.** AirGT's distance-graded flat LOD for far ground patches gained
-   5.5 → 6.1 fps, changing ≤1.3% of pixels, confined to the horizon.
-4. **Cull earlier and more cheaply.** In descent-pcfx the *geometry* side
-   (`fvi_sub`, `get_seg_masks`) cost as much as the rasterizer. Reducing the candidate set
-   beat micro-optimizing arithmetic.
+3. **LOD by distance.** Distance-graded flat LOD for far ground patches gained 5.5 →
+   6.1 fps while changing ≤1.3% of pixels, confined to the horizon.
+4. **Cull earlier and more cheaply.** Geometry work such as visibility and collision
+   queries can cost as much as the rasterizer. Reducing the candidate set beat
+   micro-optimizing arithmetic in a measured 3D engine.
 5. **Adaptive subdivision** of perspective correction — subdivide spans only where the
-   perspective error is visible (AirGT's adaptive base).
+   perspective error is visible.
 
 ## 4. Fixed point, and avoiding divides
 
 Use **int32 fixed point everywhere.** Never 64-bit, never float — see
-[pcfx-v810-performance] §5. descent-pcfx's whole "int32 conversion" commit series exists
-because 64-bit math dragged in libgcc helpers and was far slower.
+[pcfx-v810-performance] §5. A measured renderer replaced 64-bit math with 32-bit fixed
+point because the wider operations pulled in libgcc helpers and ran far slower.
 
 Common formats here: **16.16** for world coordinates, **8.8** (`Q8_8`) for compact
 per-vertex data and KING affine coefficients.
@@ -76,11 +76,10 @@ static inline int FixedMul(int a, int b)   /* 16.16 * 16.16 -> 16.16 */
 per pixel. Standard mitigations, all used here:
 
 - **Subdivide spans** (8 or 16 pixels) and divide once per subdivision, interpolating
-  linearly between — the classic Quake approach. AirGT's
-  `Cut per-span 64-bit divides` commit is exactly this.
+  linearly between — the classic Quake approach.
 - **Reciprocal tables** for `1/z` over a limited range.
 - **Cheap magnitude/reciprocal approximations for rejection tests only**, keeping exact
-  arithmetic for final geometry — descent-pcfx's top recommendation.
+  arithmetic for final geometry.
 - Remember: a load right after a `mul`/`div` pays **no** load-use penalty. Schedule a
   dependent load there.
 
@@ -102,7 +101,7 @@ Write spans, not pixels, into KRAM. See [pcfx-king-framebuffer] for the layout
 
 ## 6. Where the time actually goes
 
-From descent-pcfx's profile (2 fps build), which is the most detailed 3D profile here:
+From a detailed 2 fps software-3D profile:
 
 | Cost | Share of field |
 |---|---|
@@ -113,7 +112,7 @@ From descent-pcfx's profile (2 fps build), which is the most detailed 3D profile
 | `LD_W` alone | 17.4% of opcode cycles |
 | `MUL` / `DIV` | 4.96% / 2.51% |
 
-**Loads and memory locality dominate, not arithmetic.** The lesson recorded there:
+**Loads and memory locality dominate, not arithmetic.** The lesson from this profile:
 "reducing memory/page pressure is at least as important as replacing another multiply".
 Profile before assuming your divides are the problem — usually they are not.
 
@@ -124,8 +123,8 @@ Profile before assuming your divides are the problem — usually they are not.
 3. Profile (`PROFILE=1`) and find the real cost; do not guess.
 4. Attack pixel count first, then memory locality, then instructions.
 5. A/B every change with `make clean`, and reject results inside ±3%.
-6. Compare screenshots to catch silent visual regressions — AirGT tracks "0 changed
-   pixels" for bit-exact stages and bounds the rest ("≤1.3% of each frame").
+6. Compare screenshots to catch silent visual regressions. Require zero changed pixels
+   for bit-exact stages and set an explicit pixel-difference bound for lossy steps.
 
 ## 8. Dynamic character rendering and predetermined animation acceleration
 
@@ -151,7 +150,6 @@ when timer/IRQ code is deliberately forbidden.
 
 ## Related
 
-[pcfx-v810-performance] (read first) · [pcfx-king-framebuffer] · [pcfx-emulator-testing].
-Reference projects: `AirGT/verification/`, `descent-pcfx/PERFORMANCE.md`,
-`3DCharacterSpinning/README.md`. For the full-character, no-decimation workflow, read
-[pcfx-character-8bpp].
+[pcfx-v810-performance] (read first) · [pcfx-king-framebuffer] · [pcfx-emulator-testing] ·
+[pcfx-character-8bpp]. The measured results and design lessons needed for this workflow
+are summarized in this bundle.

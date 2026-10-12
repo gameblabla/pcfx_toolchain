@@ -132,7 +132,7 @@ You could write `vdc_setreg(1, VDC_REG_CR, VDC_CR_SB | 0x08)`, but that's not re
 
 - It asserts a VDC interrupt every field, requiring an interrupt mask/handler story
 - The Tetsu raster counter is documented in the HuC6261 manual and doesn't depend on VDC state
-- It's the proven approach used by all working projects in this workspace (wolf-pcfx, AirGT, etc.)
+- It's the proven approach used by the working examples in this skill bundle.
 
 ## Important note about the raster counter
 

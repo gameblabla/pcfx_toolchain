@@ -78,7 +78,7 @@ detector**: it flags only when the CPU writes and ADPCM/RAINBOW *reads* the same
 within one field. That distinguishes a genuine hazard from harmless region sharing.
 
 - **0 exact collisions** = your double buffering is correct, even if a coarse contention
-  map shows overlap. doom-pcfx and descent-pcfx both confirmed their layouts this way.
+  map shows overlap. The bundled Doom port uses this check to confirm its layout.
 - Non-zero = a real hazard. Move the buffer or re-time the write.
 
 It also reports KRAM bandwidth per engine per field, which tells you whether you are
@@ -92,12 +92,11 @@ near the memory bandwidth limit rather than CPU-bound. See [pcfx-emulator-testin
   than real silicon.
 - **Keep bulk KRAM bursts interrupt-atomic.** An IRQ landing in the middle of a
   select-address/write-data pair leaves KING's auto-increment stream pointing somewhere
-  else. Both doom-pcfx and descent-pcfx shipped fixes for real-hardware text garble caused
-  by exactly this: mask interrupts around the burst, or have the handler save and restore
-  KING's KRAM-data selector.
+  else. A real-hardware text-garble fix traced the fault to this case: mask interrupts
+  around the burst, or have the handler save and restore KING's KRAM-data selector.
 - **The CD engine writes KRAM directly.** A DMA in flight during gameplay is a live writer
-  in your address space — descent-pcfx's answer was `pcfx: keep the CD idle during
-  gameplay`. See [pcfx-cd-assets].
+  in your address space. Keep the CD idle during gameplay when possible. See
+  [pcfx-cd-assets].
 - RAINBOW must be fed **through KING SCSI/CD DMA**; CPU KRAM writes do not reliably reach
   the decoder.
 

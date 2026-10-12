@@ -112,9 +112,12 @@ Note the band fills need no per-row loop at all: rows are contiguous in KRAM, so
 - **`in.*` only works on the I/O bus.** An `in.*` against main RAM returns 0 — this caused
   a real depacker bug. Use `ld.*`/`st.*` for RAM.
 
-## 2. The pixel layout
+## 2. Indexed pixel layout and the direct-color exception
 
-One KRAM word holds **two horizontally adjacent pixels**:
+These packed pixel-lane rules apply to palette-indexed `KING_BGMODE_4_PAL` (2bpp),
+`KING_BGMODE_16_PAL` (4bpp), and `KING_BGMODE_256_PAL` (8bpp) data. In 2bpp and 4bpp,
+the leftmost index occupies the most-significant bit fields. In 8bpp, one KRAM word
+holds **two horizontally adjacent pixels**:
 
 ```
  bits 15..8 = LEFT pixel      bits 7..0 = RIGHT pixel
@@ -124,26 +127,35 @@ One KRAM word holds **two horizontally adjacent pixels**:
 For a 256-wide buffer: `word = base + y * 128 + x / 2`, and one screen is
 `256 * 240 / 2 = 30720` words.
 
-**If every horizontal pixel pair in your art comes out swapped**, this is why: the V810 is
-little-endian, so a halfword read of art stored "left pixel first" puts the left pixel in
-the low byte, but KING reads the left pixel from the **high** byte. Fix it **once in the
-asset build**, not in the per-frame copy (`emeraldpcfx/tools/build_gfx.py`'s
-`swap_pixel_pairs`). emeraldpcfx shipped a one-pixel comb along every edge before this
-was found.
+**If every 8bpp horizontal pixel pair in your art comes out swapped**, this is why: the
+V810 is little-endian, so a halfword read of art stored "left pixel first" puts the left
+pixel in the low byte, but KING reads the left pixel from the **high** byte. Fix it
+**once in the asset build**, not in the per-frame copy (for example, with a
+`swap_pixel_pairs()` conversion step). A previous asset bake left a one-pixel comb along
+every edge before this was found.
 
 Writing a solid pair is therefore `(colour << 8) | colour`.
 
-**Keep KING pixel lanes separate from CPU byte order.** The V810 is little-endian, but
-KING still interprets the numeric halfword with the left/even-x pixel in the high byte
-and the right/odd-x pixel in the low byte. If `pixels[]` is a byte-per-pixel RAM buffer
-with `pixels[even_x] = left` and `pixels[even_x + 1] = right`, composing the KRAM word
-must be `((u16)left << 8) | right`; blindly reading those two RAM bytes as a `u16`
-produces the opposite numeric value on the V810. If the renderer stores an already
-packed `u16`, keep that KING word value unchanged when writing it with `st.h`/`out.h`.
-For a one-pixel span, even x updates `word[15:8]` and odd x updates `word[7:0]`.
+**Do not apply the indexed lane rule to HiColor.** In `KING_BGMODE_64K`, one pixel is
+one 16-bit Y8U4V4 KRAM word: `Y` occupies bits 15..8, `U4` bits 7..4, and `V4` bits
+3..0. If those words are stored as bytes for the V810 to load, serialize each word
+little-endian (low byte, then high byte); once loaded as a `u16`, write that numeric
+value unchanged to KRAM. This is CPU byte serialization, not a swap between neighboring
+pixels. `KING_BGMODE_16M` uses its own YUV888 pair layout; see [pcfx-2d-picture].
 
-Use this two-colour check whenever changing a span writer or upload path: choose clearly
-different palette indices `left = 0x12`, `right = 0x34`; the expected KRAM word is
+**For 8bpp, keep indexed pixel lanes separate from CPU byte order.** The V810 is
+little-endian, but KING still interprets the numeric halfword with the left/even-x pixel
+in the high byte and the right/odd-x pixel in the low byte. If `pixels[]` is a
+byte-per-pixel RAM buffer with `pixels[even_x] = left` and
+`pixels[even_x + 1] = right`, compose the KRAM word as `((u16)left << 8) | right`.
+Blindly reading those two RAM bytes as a `u16` produces the opposite numeric value on
+the V810. If the renderer already stores a packed `u16`, write that numeric word
+unchanged with `st.h`/`out.h`.
+For a one-pixel span in 8bpp, even x updates `word[15:8]` and odd x updates
+`word[7:0]`.
+
+Use this two-colour 8bpp check whenever changing a span writer or upload path: choose
+clearly different palette indices `left = 0x12`, `right = 0x34`; the expected KRAM word is
 `0x1234`, and the capture must show index `0x12` on the left and `0x34` on the right.
 Then test a span containing only x=1 (update the low byte) and only x=2 (update the high
 byte) to catch incorrect leading and trailing pixel handling.
@@ -182,7 +194,7 @@ The affine `A` coefficient (register `0x38`, 8.8 fixed) is source-x step per dis
 
 Inverting this is the classic performance trick: render a **128-wide** buffer and set
 `A = 0x0080` to stretch it to 256, halving your pixel count for fat pixels.
-descent-pcfx does exactly this (128×240 logical canvas on a 256×240 physical BG0).
+This uses a 128×240 logical canvas on a 256×240 physical BG0.
 
 ## 4. Double buffering
 
@@ -206,10 +218,10 @@ front = back;
 
 The flip is one register write, so it fits easily in vertical blanking. **Palette writes
 and KING mode changes must also happen in blanking** — doing them during active display
-produces visible glitches (a real fix in both wolf-pcfx and doom-pcfx).
+produces visible glitches (a real fix in the bundled Doom port).
 
-Triple buffering (doom-pcfx, wolf-pcfx) lets the game logic start the next frame without
-waiting for the flip; only add it once double buffering is correct.
+Triple buffering lets game logic start the next frame without waiting for the flip; only
+add it once double buffering is correct.
 
 ## 5. Making the blit fast
 
@@ -247,8 +259,9 @@ matching KRAM asset or fetch microprogram.
 
 `KING_BGMODE_16_PAL` halves KRAM write traffic per pixel vs 8bpp and is an
 **unvalidated but promising** lever in doom-pcfx's notes (two 4bpp BGs ≈ same clear cost,
-half the traffic). `KING_BGMODE_64K` is direct colour with no palette; measured in
-3DCharacterSpinning at 8bpp **2.7–3.0 fps** vs high-colour **2.6–2.7 fps** — roughly half
+half the traffic). `KING_BGMODE_64K` is direct colour with no palette; one
+character-renderer profile measured 8bpp at **2.7–3.0 fps** vs high-colour at
+**2.6–2.7 fps** — roughly half
 the surface cost, as expected, since every surface-touching stage doubles.
 
 **All backgrounds must fit in the same KRAM page** — see [pcfx-kram-layout].

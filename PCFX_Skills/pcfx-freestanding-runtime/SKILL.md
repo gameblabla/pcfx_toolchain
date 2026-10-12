@@ -274,8 +274,8 @@ Current icache tag/subblock misses: unavailable
 Reason: no current ELF/profiler run
 ```
 
-After a valid repeated capture, replace those fields with the measured result. For the
-current exact-output `3DCharacterSpinning` release, the evidence is 30.117 presented
+After a valid repeated capture, replace those fields with the measured result. For a
+corrected exact-output character-renderer build, the evidence is 30.117 presented
 FPS, 23,996 DRAM penalty cycles/field, and 132 i-cache misses/field. Its clean linked ELF
 still contains no newlib/libc/libgcc, float, int64 helper, software divide helper, timer,
 or IRQ handler. Never turn structural changes into numeric claims. Statements such as

@@ -84,12 +84,13 @@ the bundled directory.
 | `vendor/pcfxemu/` | Mednafen-derived emulator source. The bundled `toolchain/bin/pcfx-headless` is the test harness; `PROFILE=1` builds add a V810+KING profiler. |
 | `DOCUMENTATION/` | Bundled NEC/Hudson chip manuals and translations (`C6230`=SoundBox/ADPCM, `C6261`=Tetsu, `C6272`=KING including the HuC6271 RAINBOW transfer and scroll rules, `C6273`=FXGA-board-only). There is **no** HuC6270 (VDC) or HuC6271 manual here; VDC facts come from `vendor/pcfxemu` and label as such. Authoritative when the SDK is ambiguous. |
 | `vendor/v810-gcc/` and `toolchain/v810-gcc/` | V810 compiler source and the bundled compiler binary. |
-| `vendor/doompcfx/` | Most mature bundled port and the deepest Doom performance source in this toolkit. |
+| `vendor/doompcfx/` | Bundled Doom port; its renderer and performance notes are available in this checkout. |
 | `tools/large-game/doom/` | Reusable large-game asset, CD, checksum, and profiling helpers copied from the local Doom workspace. |
 | `PCFX_Skills/` | This bundle: measured hardware notes, templates, evals, and the local-model wrapper. |
-| `wolf-pcfx/` | Reached **60 fps** — the reference for "fast enough". Has the asm Tetsu frame wait. |
-| `emeraldpcfx/` | The reference for **VDC** (tiles/sprites/two-chip layering). Its README is a detailed design document. |
-| `descent-pcfx/` (~2 fps), `AirGT/` (~10 fps), `3DCharacterSpinning/` (~3 fps) | Software-3D projects. Read their `PERFORMANCE.md` / `verification/` before repeating their experiments. |
+
+Measurements from projects that are not part of this checkout have been summarized in
+these skills. Do not follow machine-local project paths; use the bundled code, manuals,
+and evidence written here.
 
 Every project directory also holds `NNNN-NN-NN-*-local-command-*.txt` session transcripts.
 They are long, but they record *why* things were done. Grep them before redoing an experiment.
@@ -160,15 +161,15 @@ Which drawing surface to choose is the first design decision of any project — 
 
 Set expectations *before* designing, so you don't promise 60 fps for a scene that cannot reach it.
 
-| Workload | Measured here |
+| Workload | Recorded measurement |
 |---|---|
 | 2D tiles/sprites via VDC hardware | 60 fps |
-| Raycaster, 256×240 (wolf-pcfx) | **60 fps** |
+| Raycaster, 256×240 | **60 fps** |
 | BSP software renderer (doom-pcfx) | 15–20 fps |
-| Textured 3D world + model (AirGT) | ~10 fps |
+| Textured 3D world + model | ~10 fps |
 | Complex static 3D character, 8bpp, full geometry | **3.017 fps** measured corrected baseline |
 | Animation-safe complex character, 10 compressed clips, live transform/raster | **2.967 fps** emulator-profiler baseline |
-| Full 6-DOF 3D engine (descent-pcfx) | ~2 fps |
+| Full 6-DOF 3D engine | ~2 fps |
 
 **The V810 has no hardware 3D or FPU.** It does have 32-bit `DIV`/`DIVU`; use those
 explicitly when a strict build must not pull software arithmetic helpers. Software 3D

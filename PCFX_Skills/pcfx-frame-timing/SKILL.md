@@ -78,21 +78,13 @@ values (e.g. 1400 and 1800) and confirm something moved.
 Landing on the *leading edge* matters: a 256-entry palette upload, a KING page flip, or an
 MPSW stop/start needs the whole blanking interval, not "somewhere past a threshold".
 
-This project has this as hand-written asm in `pcfx_tetsu_wait.S`, which is worth
-copying verbatim for a hot frame loop. The constants above are for **262-line mode only**.
+The standalone assembly routine is bundled as `pcfx-frame-timing/pcfx_tetsu_wait.S`;
+copy it verbatim for a hot frame loop. The constants above are for **262-line mode only**.
 
-### Status of this fix across the workspace
-
-| Project | State |
-|---|---|
-| wolf-pcfx | asm two-phase wait (`pcfx_tetsu_wait.S`) — **the reference** |
-| AirGT, 3DCharacterSpinning | `pcfx_tetsu_wait.S` — same routine |
-| doom-pcfx | **has the double-read in C** (`pcfx_tetsu_raster_stable()`), but `video_wait_vsync()` polls a *threshold* predicate (`pcfx_in_vblank()`) instead of the two-phase wrap wait — **it does not have the asm routine** |
-
-doom-pcfx is therefore not missing the hardware-bug workaround itself, but it lacks the
-canonical wrap-edge wait: it waits for "raster is past a threshold" rather than "the frame
-just wrapped". Porting `pcfx_tetsu_wait.S` into doom-pcfx is the
-outstanding fix there, and is the thing to look at for any frame-edge-precision bug.
+The bundled Doom port also double-reads the raster counter, but its C frame wait polls a
+threshold predicate instead of the two-phase wrap edge. The double-read avoids the
+counter's transitional value; the assembly routine above is still the bundled reference
+for entering the next frame at the wrap.
 
 ## 3. Where vertical blanking actually is
 

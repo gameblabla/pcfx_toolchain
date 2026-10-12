@@ -146,6 +146,6 @@ with hand-written V810 assembly, that is the module working as intended.
    executes (`grep` for callers, `v810-nm` the ELF) before blaming it, and separating
    "latent trap found nearby" from "the bug you were asked to fix".
 
-**Standing finding for the project:** `3DCharacterSpinning`'s `_scene_append_faces_v810`
-carries two immediates that GNU `as` truncates silently. Dead today; a live bug the moment
-anything calls it.
+**Standing finding for the character-renderer fixture:** `_scene_append_faces_v810`
+carries two immediates that GNU `as` truncates silently. Dead in the measured build; a
+live bug if anything calls it.

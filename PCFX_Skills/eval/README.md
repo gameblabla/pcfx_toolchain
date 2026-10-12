@@ -6,10 +6,10 @@ it does, so the skills can be improved against evidence instead of taste.
 
 ## Method
 
-Each case is a real fix from the git history of `doom-pcfx`, `descent-pcfx`,
-`wolf-pcfx`, or `3DCharacterSpinning`. The commit is the **gold answer**. The model is given the state *before*
-the fix — the symptom as a human would report it, plus the buggy code — and asked to
-diagnose and patch. Its answer is scored against checkpoints taken from the commit.
+Each case captures a real failure and its accepted correction. The expected behavior is
+the **gold answer**. The model is given the state *before* the fix — the symptom as a
+human would report it, plus the buggy code — and asked to diagnose and patch. Its answer
+is scored against the checkpoints recorded with each case.
 
 Three arms per case:
 
@@ -87,7 +87,7 @@ the regression answer must establish all of these before changing constants:
 A passing local check records the current ELF symbols, compares all used VDC
 pattern words and palette entries, checks the entire live BAT against its
 RAM shadow, and verifies that an inactive second-player sprite is not emitted
-at `(0,0)`. The 2026-09-24 Dirty Pair port initially passed the pattern and
+at `(0,0)`. The 2026-09-24 map port initially passed the pattern and
 palette checks while the screen still showed bands: the BAT flush wrote the
 lower pair 32 columns rightward instead of one row down. The corrected state
 matched all 1,536 BAT words and all 49,152 source palette slots. The case in

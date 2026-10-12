@@ -1,18 +1,18 @@
 # Qwen 3.6 27B vs. Claude — PCFX_Skills eval scorecard
 
 Model: `Qwen3.6-27B-uncensored-heretic-v2` IQ4_XS @ `0.0.0.0:8080`, temp 0.3.
-Gold answers = the actual commits in `doom-pcfx` / `descent-pcfx` / `wolf-pcfx`.
+Gold answers are the expected corrections recorded in the case results and skill modules.
 
-Grading: each case has N checkpoints taken from the real commit. Score = hit/N.
+Grading: each case has N checkpoints. Score = hit/N.
 
 ---
 
-## Case `vdc-bat-row-address` — Dirty Pair PC-FX, 2026-09-24
+## Case `vdc-bat-row-address` — VDC map port, 2026-09-24
 
 Local model at `127.0.0.1:8080`, selected `pcfx-vdc-tiles-sprites` and
 `pcfx-emulator-testing`, temperature 0.3. The prompt and broken loop are in
-`cases/vdc-bat-row-address/task.md`. The observed fix is in
-`dirty_pair_pcfx/pcfx-port/src/dp_pcfx_vdc.c`.
+`cases/vdc-bat-row-address/task.md`. The corrected loop and acceptance check are in
+`../../pcfx-vdc-tiles-sprites/SKILL.md`.
 
 | Checkpoint | initial skill | revised skill |
 |---|---|---|
@@ -75,7 +75,7 @@ the preamble tells the model the bundle overrides its priors.
 
 ---
 
-## Case `character-8bpp-10fps` — 3DCharacterSpinning `de68a6b..3f91bdb`
+## Case `character-8bpp-10fps` — full character output
 
 "preserve the complete character asset while restructuring and reducing 8bpp output work"
 
@@ -99,7 +99,7 @@ server was unavailable. Run `none`, `all`, and the selected set
 
 ---
 
-## Case `freestanding-character-runtime` — 3DCharacterSpinning strict runtime audit
+## Case `freestanding-character-runtime` — strict character runtime audit
 
 This case has been added but was **not run in this environment** because the local Qwen
 server and V810 toolchain were unavailable. Use selected skills

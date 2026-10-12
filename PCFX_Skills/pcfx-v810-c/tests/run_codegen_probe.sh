@@ -10,10 +10,9 @@ if [[ -z "$toolchain" ]]; then toolchain="$repo_root/toolchain/v810-gcc"; fi
 compiler="$toolchain/bin/v810-gcc"
 out=$(printenv PCFX_PROBE_OUT || true)
 if [[ -z "$out" ]]; then
-    tmpdir=$(printenv TMPDIR || true)
-    if [[ -z "$tmpdir" ]]; then tmpdir=/tmp; fi
-    out="$tmpdir/pcfx-v810-c-probe.s"
+    out="$repo_root/build/pcfx-v810-c-probe.s"
 fi
+mkdir -p "$(dirname -- "$out")"
 
 [[ -x "$compiler" ]] || {
     printf 'V810 GCC not found or not executable: %s\n' "$compiler" >&2

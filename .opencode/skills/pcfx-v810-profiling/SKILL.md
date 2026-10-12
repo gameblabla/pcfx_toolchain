@@ -52,7 +52,8 @@ do not use a polling HUD or emulator wall-clock speed. Require at least two capt
 and reject publication when FPS, cycles/field, DRAM penalty/field, or i-cache
 misses/field differ by more than the project noise gate (normally 3%).
 
-For `3DCharacterSpinning`, the checked-in harness is:
+For a project that provides a profile target, use its clean-build and same-savestate
+procedure. One measured character-renderer setup used:
 
 ```bash
 cd source
@@ -67,7 +68,7 @@ computes FPS from `nframe`, and refuses a measured report unless the complete DR
 i-cache blocks parse. Missing inputs produce `null`/`unavailable`, never zero.
 
 
-Current corrected reference result for that project (`LINEAR_BG=0 OUTLINE=1
+One corrected exact-output reference result (`LINEAR_BG=0 OUTLINE=1
 MIN_TRIANGLE_AREA2=0 PREBAKED_POSES=1`, native 256x240, full
 5,563-vertex/10,628-face source asset):
 
@@ -98,7 +99,7 @@ substitute generic host timing or invent equivalent counters.
 
 ## 2. A real report, and what each block means
 
-This is an actual `wolf-pcfx` run, unedited. Read it top to bottom:
+This captured 1800-field run is unedited. Read it top to bottom:
 
 ```
 ################  V810 PROFILE  (video_frames=1800)  ################
@@ -224,13 +225,12 @@ CD or pad access) and no amount of tuning your own loops will help — remove th
 
 ## 3. Map hot buckets back to functions
 
-Raw addresses are useless on their own. The profiler writes a CSV and there is a tool
-to symbolize it (`tools/v810_prof_symbols.py`, present in the doom-pcfx and
-descent-pcfx trees):
+Raw addresses are useless on their own. The profiler writes a CSV and the bundled helper
+`tools/large-game/doom/v810_prof_symbols.py` symbolizes it:
 
 ```bash
 V810_PROF_OUT=prof.csv $PCFXEMU/pcfx-headless-prof --frames 1800 game.cue 2> prof.txt
-python3 tools/v810_prof_symbols.py prof.csv game.elf | head -30
+python3 tools/large-game/doom/v810_prof_symbols.py prof.csv game.elf | head -30
 ```
 
 It maps each 32-byte bucket to the enclosing symbol via the ELF symbol table and

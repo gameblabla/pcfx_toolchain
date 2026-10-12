@@ -80,8 +80,8 @@ static inline fx16_16 fx_div(fx16_16 a, fx16_16 b)
 ```
 
 **Cost check before you optimize these.** The V810's `MUL` is 13 cycles and `DIV` is
-38 — slow per op, but a real profile of `wolf-pcfx` showed all multiplies and divides
-together were **0.17% of the frame**. Do not replace a multiply with a lookup table
+38 — slow per op, but one raycaster profile showed all multiplies and divides together
+were **0.17% of the frame**. Do not replace a multiply with a lookup table
 unless the profile says multiplies are actually costing you: an extra cache-missing
 load is usually a net loss. See [pcfx-v810-profiling] §2.
 
