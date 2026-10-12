@@ -28,21 +28,28 @@ release_name="pcfx-toolkit-$release_version"
 release_path="$PCFX_REPO_ROOT/dist/$release_name.tar.gz"
 rm -f "$release_path"
 
+release_paths=(
+    .agents/skills
+    .gitignore
+    .gitmodules
+    .opencode/skills
+    AGENTS.md
+    DOCUMENTATION
+    LICENSES.md
+    Makefile
+    PCFX_Skills
+    README.md
+    examples
+    scripts
+    toolchain
+    tools
+    vendor
+)
+
 tar -czf "$release_path" \
-    --exclude='./.git' --exclude='./.git/*' \
-    --exclude='*/.git' --exclude='*/.git/*' \
-    --exclude='./dist' --exclude='./dist/*' \
-    --exclude='./build' --exclude='./build/*' \
-    --exclude='./bios' --exclude='./bios/*' \
-    --exclude='./pcfx.rom' --exclude='./pcfxbios.bin' \
-    --exclude='./pcfxv101.bin' --exclude='./pcfx_bios.bin' \
-    --exclude='./pcfxga.rom' --exclude='./pcfxga.bin' \
-    --exclude='./pcfx_rainbow_mp2' --exclude='./pcfx_rainbow_mp2/*' \
-    --exclude='./pcfx_rainbow_mp2_startup_sync_package' --exclude='./pcfx_rainbow_mp2_startup_sync_package/*' \
-    --exclude='./.vexp' --exclude='./.vexp/*' \
-    --exclude='./*-local-command-*.txt' \
-    --exclude='./codex-session-*.md' --exclude='./session-*.md' \
+    --exclude='.git' --exclude='*/.git' --exclude='*/.git/*' \
     --exclude='*/build' --exclude='*/build/*' \
+    --exclude='*/__pycache__' --exclude='*/__pycache__/*' \
     --exclude='examples/*/*.o' \
     --exclude='examples/*/*.elf' \
     --exclude='examples/*/*.map' \
@@ -54,11 +61,20 @@ tar -czf "$release_path" \
     --exclude='examples/*/assets/*.dat' \
     --exclude='vendor/*/src/*.o' \
     --exclude='vendor/*/*.a' \
-    --exclude='vendor/pcfx_rainbow_mp2_adpcm/*.bin' --exclude='vendor/pcfx_rainbow_mp2_adpcm/*.cue' \
-    --exclude='vendor/pcfx_rainbow_mp2_adpcm/assets' --exclude='vendor/pcfx_rainbow_mp2_adpcm/assets/*' \
-    --exclude='vendor/pcfx_rainbow_mp2_adpcm/validation' --exclude='vendor/pcfx_rainbow_mp2_adpcm/validation/*' \
-    --exclude='*/__pycache__' --exclude='*/__pycache__/*' \
-    -C "$PCFX_REPO_ROOT" .
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/*.bin' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/*.cue' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/assets' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/assets/*' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/validation' \
+    --exclude='vendor/pcfx_rainbow_mp2_adpcm/validation/*' \
+    --exclude='pcfx.rom' --exclude='*/pcfx.rom' \
+    --exclude='pcfxbios.bin' --exclude='*/pcfxbios.bin' \
+    --exclude='pcfxv101.bin' --exclude='*/pcfxv101.bin' \
+    --exclude='pcfx_bios.bin' --exclude='*/pcfx_bios.bin' \
+    --exclude='pcfxga.rom' --exclude='*/pcfxga.rom' \
+    --exclude='pcfxga.bin' --exclude='*/pcfxga.bin' \
+    -C "$PCFX_REPO_ROOT" \
+    "${release_paths[@]}"
 
 sha256sum "$release_path" > "$release_path.sha256"
 echo "PACKAGE wrote $release_path"
